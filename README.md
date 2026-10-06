@@ -1,3 +1,15 @@
+# TaskNotes × PushGo
+
+基于官方 TaskNotes 提交 69535cd956d11474b980deef8429ff0be232185f 的二开测试版，插件 ID 保持 tasknotes，保留上游历史和 MIT 许可证。
+
+支持 TaskNotes 界面创建/修改任务后同步定时计划，独立业务服务通过 PushGo 通知，用户在网页完成开始/结束拍照打卡，照片和记录再拉回 Obsidian。域名、网关、频道、附件目录、提前分钟、优先级及统计时间均可配置。移动端支持按插件设计实现，真机验收状态见交付记录。
+
+安装和使用见 [PushGo 二开指南](PUSHGO-开发与安装.md)。插件不替代 vault 同步；直接手改 MD 不修改服务器批准计划。独立业务服务与 Android 客户端分别构建及配置，服务镜像无需包含用户凭据。
+
+以下保留官方 TaskNotes 说明。
+
+---
+
 # <img src="tasknotes-gradient.svg" width="32" height="32" style="vertical-align: middle;"> TaskNotes for Obsidian
 
 A task management plugin where each task is a separate Markdown note, and all views are powered by [Obsidian Bases](https://help.obsidian.md/bases).
