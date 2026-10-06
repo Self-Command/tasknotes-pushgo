@@ -1,3 +1,4 @@
+import { PushGoIntegration } from "./api/pushgo/PushGoIntegration";
 import {
 	Notice,
 	Plugin,
@@ -157,6 +158,7 @@ export default class TaskNotesPlugin extends Plugin {
 
 	// Business logic services
 	taskService: TaskService;
+	pushgo?: PushGoIntegration;
 	filterService: FilterService;
 	taskStatsService: TaskStatsService;
 	viewStateManager: ViewStateManager;
@@ -285,6 +287,8 @@ export default class TaskNotesPlugin extends Plugin {
 		});
 
 		await this.loadSettings();
+		this.pushgo = new PushGoIntegration(this);
+		await this.pushgo.initialize();
 		this.performanceProfiler = createTaskNotesPerformanceProfiler({
 			isEnabled: () => this.settings?.enableDebugLogging === true,
 			logger: createTaskNotesLogger({
@@ -674,6 +678,7 @@ export default class TaskNotesPlugin extends Plugin {
 	}
 
 	onunload() {
+		this.pushgo?.close();
 		this.emitter?.trigger(TASKNOTES_RUNTIME_LIFECYCLE_RAW_EVENTS.unloading, {
 			timestamp: new Date().toISOString(),
 		});
@@ -684,9 +689,7 @@ export default class TaskNotesPlugin extends Plugin {
 		return pluginDataFileExists(this);
 	}
 
-	async loadPluginDataForSafeWrite(
-		operation: string
-	): Promise<Record<string, unknown> | null> {
+	async loadPluginDataForSafeWrite(operation: string): Promise<Record<string, unknown> | null> {
 		const loadedData = (await this.loadData()) as Record<string, unknown> | null | undefined;
 		if (
 			(loadedData === null || loadedData === undefined) &&
@@ -1153,6 +1156,7 @@ export default class TaskNotesPlugin extends Plugin {
 		property: keyof TaskInfo,
 		value: TaskInfo[keyof TaskInfo],
 		options: {
+			pushgoOrigin?: "tasknotes_ui";
 			silent?: boolean;
 			completionDate?: string;
 			confirmClearInstances?: (cleared: {
@@ -1176,7 +1180,11 @@ export default class TaskNotesPlugin extends Plugin {
 							return proceed;
 						});
 
-			const updatedTask = await this.taskService.updateProperty(task, property, value, {
+			const updatedTask = await (
+				options.pushgoOrigin
+					? (this.pushgo?.uiService() ?? this.taskService)
+					: this.taskService
+			).updateProperty(task, property, value, {
 				...options,
 				confirmClearInstances,
 			});
@@ -1236,9 +1244,10 @@ export default class TaskNotesPlugin extends Plugin {
 				targetDate
 			);
 			// Task cards still represent the recurring parent, not the occurrence note.
-			const updatedTask = result.path === task.path
-				? result
-				: (await this.cacheManager.getTaskInfo(task.path)) || task;
+			const updatedTask =
+				result.path === task.path
+					? result
+					: (await this.cacheManager.getTaskInfo(task.path)) || task;
 
 			const dateStr = formatDateForStorage(targetDate);
 			const wasCompleted = updatedTask.complete_instances?.includes(dateStr);
@@ -1259,9 +1268,11 @@ export default class TaskNotesPlugin extends Plugin {
 		}
 	}
 
-	async toggleTaskArchive(task: TaskInfo): Promise<TaskInfo> {
+	async toggleTaskArchive(task: TaskInfo, pushgoOrigin = false): Promise<TaskInfo> {
 		try {
-			const updatedTask = await this.taskService.toggleArchive(task);
+			const updatedTask = await (
+				pushgoOrigin ? (this.pushgo?.uiService() ?? this.taskService) : this.taskService
+			).toggleArchive(task);
 			const action = updatedTask.archived ? "archived" : "unarchived";
 			new Notice(`Task ${action}`);
 			return updatedTask;
@@ -1276,9 +1287,11 @@ export default class TaskNotesPlugin extends Plugin {
 		}
 	}
 
-	async toggleTaskStatus(task: TaskInfo): Promise<TaskInfo> {
+	async toggleTaskStatus(task: TaskInfo, pushgoOrigin = false): Promise<TaskInfo> {
 		try {
-			const updatedTask = await this.taskService.toggleStatus(task);
+			const updatedTask = await (
+				pushgoOrigin ? (this.pushgo?.uiService() ?? this.taskService) : this.taskService
+			).toggleStatus(task);
 			const statusConfig = this.statusManager.getStatusConfig(updatedTask.status);
 			new Notice(`Task marked as '${statusConfig?.label || updatedTask.status}'`);
 			return updatedTask;
@@ -1793,7 +1806,9 @@ export default class TaskNotesPlugin extends Plugin {
 			}
 
 			const nextStatus = this.statusManager.getNextStatus(taskInfo.status);
-			await this.updateTaskProperty(taskInfo, "status", nextStatus);
+			await this.updateTaskProperty(taskInfo, "status", nextStatus, {
+				pushgoOrigin: "tasknotes_ui",
+			});
 		} catch (error) {
 			tasknotesLogger.error("Failed to cycle current task status:", {
 				category: "persistence",
@@ -1813,7 +1828,9 @@ export default class TaskNotesPlugin extends Plugin {
 
 			const currentPriority = taskInfo.priority || this.settings.defaultTaskPriority;
 			const nextPriority = this.priorityManager.getNextPriority(currentPriority);
-			await this.updateTaskProperty(taskInfo, "priority", nextPriority);
+			await this.updateTaskProperty(taskInfo, "priority", nextPriority, {
+				pushgoOrigin: "tasknotes_ui",
+			});
 		} catch (error) {
 			tasknotesLogger.error("Failed to cycle current task priority:", {
 				category: "persistence",

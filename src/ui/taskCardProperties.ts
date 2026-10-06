@@ -1,3 +1,4 @@
+import { uiPlugin } from "../pushgo/uiOrigin";
 import { Notice, setTooltip, TFile, type CachedMetadata } from "obsidian";
 import TaskNotesPlugin from "../main";
 import { ICSEvent, TaskInfo } from "../types";
@@ -154,7 +155,7 @@ function attachDateClickHandler(
 						} else {
 							finalValue = dateValue;
 						}
-						await plugin.updateTaskProperty(task, dateType, finalValue);
+						await uiPlugin(plugin).updateTaskProperty(task, dateType, finalValue);
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
 						tasknotesLogger.error(`Error updating ${dateType} date:`, {

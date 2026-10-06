@@ -106,3 +106,13 @@ AGENTS.md
 /.tmp
 /DESIGN.md
 /PRODUCT.md
+
+.pushgo-build.css
+**/pushgo-state.json*
+**/pushgo-state.*.json*
+.obsidian-config-e2e/
+.pushgo-e2e-vault/
+tasknotes-e2e-vault/PushGo附件/
+tasknotes-e2e-vault/Tasks/
+tasknotes-e2e-vault/TaskNotes/Start Here.md
+tasknotes-e2e-vault/TaskNotes/Views/pomodoro-stats.base

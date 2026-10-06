@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 import TaskNotesPlugin from "../main";
 import { createElementInDocument } from "../utils/documentDom";
 import type { BasesEntry, BasesView, BasesViewFactory } from "obsidian";
@@ -1668,9 +1669,7 @@ export class CalendarView extends BasesViewBase {
 
 		const getScale = (): number => {
 			const slat = this.calendarEl?.querySelector<HTMLElement>(".fc-timegrid-slot-lane");
-			return slat?.offsetHeight
-				? slat.getBoundingClientRect().height / slat.offsetHeight
-				: 1;
+			return slat?.offsetHeight ? slat.getBoundingClientRect().height / slat.offsetHeight : 1;
 		};
 		let lastScale = getScale();
 		this.canvasZoomObserver = new win.MutationObserver(() => {
@@ -2337,7 +2336,7 @@ export class CalendarView extends BasesViewBase {
 			}
 			if (plan.kind === "update-time-entries") {
 				try {
-					const updatedTask = await this.plugin.taskService.updateTask(taskInfo, {
+					const updatedTask = await uiTaskService(this.plugin).updateTask(taskInfo, {
 						timeEntries: plan.timeEntries,
 					});
 					await this.refreshAfterDirectCalendarTaskWrite(updatedTask);
@@ -2381,7 +2380,7 @@ export class CalendarView extends BasesViewBase {
 					return;
 				}
 				if (plan.kind === "update-date-property") {
-					const updatedTask = await this.plugin.taskService.updateProperty(
+					const updatedTask = await uiTaskService(this.plugin).updateProperty(
 						taskInfo,
 						plan.property,
 						plan.value
@@ -2393,14 +2392,10 @@ export class CalendarView extends BasesViewBase {
 						const scheduledField = this.plugin.fieldMapper.toUserField("scheduled");
 						const dueField = this.plugin.fieldMapper.toUserField("due");
 
-						await processVaultFrontMatter(
-							this.plugin.app,
-							spanFile,
-							(frontmatter) => {
-								if (plan.scheduled) frontmatter[scheduledField] = plan.scheduled;
-								if (plan.due) frontmatter[dueField] = plan.due;
-							}
-						);
+						await processVaultFrontMatter(this.plugin.app, spanFile, (frontmatter) => {
+							if (plan.scheduled) frontmatter[scheduledField] = plan.scheduled;
+							if (plan.due) frontmatter[dueField] = plan.due;
+						});
 						await this.refreshAfterDirectCalendarTaskWrite({
 							...taskInfo,
 							scheduled: plan.scheduled ?? taskInfo.scheduled,
@@ -2445,7 +2440,7 @@ export class CalendarView extends BasesViewBase {
 			}
 			if (plan.kind === "update-time-entries") {
 				try {
-					const updatedTask = await this.plugin.taskService.updateTask(taskInfo, {
+					const updatedTask = await uiTaskService(this.plugin).updateTask(taskInfo, {
 						timeEntries: plan.timeEntries,
 					});
 					await this.refreshAfterDirectCalendarTaskWrite(updatedTask);
@@ -2562,7 +2557,7 @@ export class CalendarView extends BasesViewBase {
 
 		// Handle task resize (update time estimate)
 		try {
-			const updatedTask = await this.plugin.taskService.updateProperty(
+			const updatedTask = await uiTaskService(this.plugin).updateProperty(
 				taskInfo,
 				"timeEstimate",
 				plan.value
@@ -2850,9 +2845,7 @@ export class CalendarView extends BasesViewBase {
 		// Add hover preview for property-based events (Ctrl+hover to preview note)
 		if (eventType === "property-based" && extendedProps.filePath) {
 			arg.el.addEventListener("mouseover", (event: MouseEvent) => {
-				const file = this.plugin.app.vault.getAbstractFileByPath(
-					extendedProps.filePath
-				);
+				const file = this.plugin.app.vault.getAbstractFileByPath(extendedProps.filePath);
 				if (file) {
 					this.plugin.app.workspace.trigger("hover-link", {
 						event,
@@ -2872,9 +2865,7 @@ export class CalendarView extends BasesViewBase {
 				e.preventDefault();
 				e.stopPropagation();
 
-				const file = this.plugin.app.vault.getAbstractFileByPath(
-					extendedProps.filePath
-				);
+				const file = this.plugin.app.vault.getAbstractFileByPath(extendedProps.filePath);
 
 				if (file instanceof TFile) {
 					const menu = new Menu();

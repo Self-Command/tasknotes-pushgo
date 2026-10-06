@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 import { Notice, TFile } from "obsidian";
 import type TaskNotesPlugin from "../main";
 import type { TaskInfo } from "../types";
@@ -44,11 +45,14 @@ export async function openOrCreateOccurrenceNote(
 	const dateStr = formatDateForStorage(targetDate);
 
 	try {
-		const existingOccurrence = await plugin.taskService.findMaterializedOccurrence(
+		const existingOccurrence = await uiTaskService(plugin).findMaterializedOccurrence(
 			parentTask,
 			targetDate
 		);
-		const occurrence = await plugin.taskService.materializeOccurrence(parentTask, targetDate);
+		const occurrence = await uiTaskService(plugin).materializeOccurrence(
+			parentTask,
+			targetDate
+		);
 		await openTaskPath({ plugin, path: occurrence.path, openInNewLeaf });
 		onUpdate?.();
 		new Notice(
@@ -76,7 +80,7 @@ export async function openMaterializedOccurrenceParent(
 	const { plugin, occurrenceTask, openInNewLeaf = false } = options;
 
 	try {
-		const parent = await plugin.taskService.getMaterializedOccurrenceParent(occurrenceTask);
+		const parent = await uiTaskService(plugin).getMaterializedOccurrenceParent(occurrenceTask);
 		if (!parent) {
 			new Notice("Recurring parent not found");
 			return null;

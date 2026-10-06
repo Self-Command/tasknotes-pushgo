@@ -1,48 +1,39 @@
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "module": "ESNext",
-    "target": "ES6",
-    "allowJs": true,
-    "noImplicitAny": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "isolatedModules": true,
-    "strictNullChecks": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "skipLibCheck": true,
-    "noImplicitReturns": false,
-    "noImplicitThis": false,
-    "paths": {
-      "obsidian": ["./node_modules/obsidian"]
-    },
-    "types": [
-      "obsidian-typings"
-    ],
-    "lib": [
-      "DOM",
-      "DOM.Iterable",
-      "ES5",
-      "ES6",
-      "ES7"
-    ]
-  },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "tests/**/*",
-    "node_modules/**/*",
-    "src/views/AgendaView.ts",
-    "src/views/TaskListView.ts",
-    "src/views/KanbanView.ts",
-    "src/views/MiniCalendarView.ts",
-    "src/views/AdvancedCalendarView.ts",
-    "src/views/NotesView.ts"
-  ]
+	"compilerOptions": {
+		"baseUrl": ".",
+		"inlineSourceMap": true,
+		"inlineSources": true,
+		"module": "ESNext",
+		"target": "ES6",
+		"allowJs": true,
+		"noImplicitAny": true,
+		"moduleResolution": "node",
+		"importHelpers": true,
+		"isolatedModules": true,
+		"strictNullChecks": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"skipLibCheck": true,
+		"noImplicitReturns": false,
+		"noImplicitThis": false,
+		"paths": {
+			"obsidian": ["./node_modules/obsidian"]
+		},
+		"types": ["obsidian-typings"],
+		"lib": ["DOM", "DOM.Iterable", "ES5", "ES6", "ES7"],
+		"jsx": "react-jsx"
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"exclude": [
+		"tests/**/*",
+		"node_modules/**/*",
+		"src/views/AgendaView.ts",
+		"src/views/TaskListView.ts",
+		"src/views/KanbanView.ts",
+		"src/views/MiniCalendarView.ts",
+		"src/views/AdvancedCalendarView.ts",
+		"src/views/NotesView.ts"
+	]
 }

@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- FullCalendar callbacks provide checked DOM references after mount. */
 /**
  * Shared Calendar Core Logic
@@ -397,7 +398,7 @@ export async function handlePatternInstanceDrop(
 		}
 
 		// Update the recurrence pattern
-		await plugin.taskService.updateProperty(taskInfo, "recurrence", updatedRRule);
+		await uiTaskService(plugin).updateProperty(taskInfo, "recurrence", updatedRRule);
 
 		// Note: Don't update scheduled date - it should remain independent
 		// Only the pattern timing changes, not the next occurrence timing
@@ -441,7 +442,7 @@ export async function handleRecurringTaskDrop(
 		}
 
 		// Update the scheduled field directly (manual reschedule of next occurrence)
-		await plugin.taskService.updateProperty(taskInfo, "scheduled", newDateString);
+		await uiTaskService(plugin).updateProperty(taskInfo, "scheduled", newDateString);
 		new Notice("Rescheduled next occurrence. This does not change the recurrence pattern.");
 	} else if (isPatternInstance) {
 		// Dragging Pattern Instances: Updates DTSTART in RRULE and recalculates task.scheduled
@@ -462,7 +463,7 @@ export async function handleRecurringTaskDrop(
 			);
 		}
 
-		await plugin.taskService.updateProperty(taskInfo, "scheduled", updatedScheduled);
+		await uiTaskService(plugin).updateProperty(taskInfo, "scheduled", updatedScheduled);
 	}
 }
 
@@ -470,10 +471,7 @@ export async function handleRecurringTaskDrop(
  * Return the recurrence instance addressed by a calendar event. Rendered dates
  * from due events or time entries must not become occurrence identity.
  */
-export function getOccurrenceDateForEvent(
-	taskInfo: TaskInfo,
-	eventArg: unknown
-): Date | undefined {
+export function getOccurrenceDateForEvent(taskInfo: TaskInfo, eventArg: unknown): Date | undefined {
 	if (!taskInfo.recurrence) {
 		return undefined;
 	}
@@ -570,7 +568,7 @@ function getResolvedOccurrenceParentKey(task: TaskInfo, plugin: TaskNotesPlugin)
 	const resolved = metadataCache?.getFirstLinkpathDest?.(linkPath, task.path);
 	const resolvedPath =
 		resolved && typeof (resolved as { path?: unknown }).path === "string"
-			? ((resolved as { path: string }).path)
+			? (resolved as { path: string }).path
 			: undefined;
 
 	return resolvedPath ? normalizeTaskReference(resolvedPath) : normalizedReference;
@@ -608,10 +606,7 @@ function buildMaterializedOccurrenceDateIndex(
 	return index;
 }
 
-function addMaterializedOccurrenceMetadata(
-	event: CalendarEvent,
-	task: TaskInfo
-): CalendarEvent {
+function addMaterializedOccurrenceMetadata(event: CalendarEvent, task: TaskInfo): CalendarEvent {
 	if (!isMaterializedOccurrenceTask(task)) {
 		return event;
 	}
@@ -1205,9 +1200,7 @@ export function generateRecurringTaskInstances(
 		if (typeof task.recurrence === "string" && task.recurrence.includes("FREQ=YEARLY")) {
 			// For yearly tasks, look ahead ~2.2 years to ensure we find at least one occurrence
 			const lookAheadDays = 800;
-			adjustedEndDate = new Date(
-				startDate.getTime() + lookAheadDays * 24 * 60 * 60 * 1000
-			);
+			adjustedEndDate = new Date(startDate.getTime() + lookAheadDays * 24 * 60 * 60 * 1000);
 		}
 		const recurringDates = generateRecurringInstances(
 			task,
@@ -1272,7 +1265,13 @@ export function generateRecurringTaskInstances(
 			}
 
 			const eventStart = hasOriginalTime ? `${instanceDate}T${templateTime}` : instanceDate;
-			const event = createRecurringEvent(task, eventStart, instanceDate, templateTime, plugin);
+			const event = createRecurringEvent(
+				task,
+				eventStart,
+				instanceDate,
+				templateTime,
+				plugin
+			);
 			if (event) {
 				instances.push(event);
 				emittedInstanceDates.add(instanceDate);
@@ -1696,8 +1695,10 @@ export async function generateCalendarEvents(
 				}
 			} else if (
 				todayDate &&
-				!((showedScheduledOverdueOnToday || hasGeneratedScheduledLayerOnToday) &&
-					!hasTimeComponent(task.due))
+				!(
+					(showedScheduledOverdueOnToday || hasGeneratedScheduledLayerOnToday) &&
+					!hasTimeComponent(task.due)
+				)
 			) {
 				const dueEvent = createDueEvent(task, plugin);
 				const overdueEvent = dueEvent
@@ -1916,7 +1917,7 @@ export async function handleTimeEntryCreation(
 						});
 
 						// Save to file
-						await plugin.taskService.updateTask(selectedTask, {
+						await uiTaskService(plugin).updateTask(selectedTask, {
 							timeEntries: updatedTimeEntries,
 						});
 

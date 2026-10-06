@@ -1,3 +1,4 @@
+import { uiPlugin } from "../pushgo/uiOrigin";
 import { App } from "obsidian";
 import TaskNotesPlugin from "../main";
 import { Reminder, TaskInfo } from "../types";
@@ -92,7 +93,7 @@ async function handleToggleStatus(
 		if (task.recurrence) {
 			await plugin.toggleRecurringTaskComplete(task, getKanbanTaskActionDate(task));
 		} else {
-			await plugin.toggleTaskStatus(task);
+			await uiPlugin(plugin).toggleTaskStatus(task);
 		}
 	} catch (error) {
 		tasknotesLogger.error("[TaskNotes][KanbanView] Failed to toggle status", {
@@ -123,7 +124,7 @@ function showPriorityMenu(
 		onSelect: (newPriority: string) => {
 			void (async () => {
 				try {
-					await plugin.updateTaskProperty(task, "priority", newPriority);
+					await uiPlugin(plugin).updateTaskProperty(task, "priority", newPriority);
 				} catch (error) {
 					tasknotesLogger.error("[TaskNotes][KanbanView] Failed to update priority", {
 						category: "validation",
@@ -151,9 +152,17 @@ function showRecurrenceMenu(
 		onSelect: (newRecurrence: string | null, anchor?: "scheduled" | "completion") => {
 			void (async () => {
 				try {
-					await plugin.updateTaskProperty(task, "recurrence", newRecurrence || undefined);
+					await uiPlugin(plugin).updateTaskProperty(
+						task,
+						"recurrence",
+						newRecurrence || undefined
+					);
 					if (anchor !== undefined) {
-						await plugin.updateTaskProperty(task, "recurrence_anchor", anchor);
+						await uiPlugin(plugin).updateTaskProperty(
+							task,
+							"recurrence_anchor",
+							anchor
+						);
 					}
 				} catch (error) {
 					tasknotesLogger.error("[TaskNotes][KanbanView] Failed to update recurrence", {
@@ -178,7 +187,7 @@ function showReminderModal(
 	const modal = new ReminderModal(plugin.app, plugin, task, (reminders: Reminder[]) => {
 		void (async () => {
 			try {
-				await plugin.updateTaskProperty(
+				await uiPlugin(plugin).updateTaskProperty(
 					task,
 					"reminders",
 					reminders.length > 0 ? reminders : undefined
@@ -222,7 +231,7 @@ async function openDateContextMenu(
 					} else {
 						finalValue = dateValue;
 					}
-					await plugin.updateTaskProperty(task, dateType, finalValue);
+					await uiPlugin(plugin).updateTaskProperty(task, dateType, finalValue);
 				} catch (error) {
 					tasknotesLogger.error("[TaskNotes][KanbanView] Failed to update date", {
 						category: "validation",

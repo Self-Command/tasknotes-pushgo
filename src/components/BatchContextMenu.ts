@@ -1,12 +1,10 @@
+import { uiPlugin, uiTaskService } from "../pushgo/uiOrigin";
 import { Menu, Notice, TFile, type MenuItem } from "obsidian";
 import TaskNotesPlugin from "../main";
 import { TaskInfo } from "../types";
 import { DateContextMenu, type DateOption } from "./DateContextMenu";
 import { ContextMenu } from "./ContextMenu";
-import {
-	closeActiveContextMenu,
-	showCoordinatedMenu,
-} from "./ContextMenuCoordinator";
+import { closeActiveContextMenu, showCoordinatedMenu } from "./ContextMenuCoordinator";
 import { showConfirmationModal } from "../modals/ConfirmationModal";
 import { showTextInputModal } from "../modals/TextInputModal";
 import { TagSuggest } from "../modals/taskModalSuggests";
@@ -391,7 +389,7 @@ export class BatchContextMenu {
 				try {
 					const task = await plugin.cacheManager.getTaskInfo(path);
 					if (task) {
-						await plugin.taskService.updateProperty(task, "tags", getNextTags(task));
+						await uiTaskService(plugin).updateProperty(task, "tags", getNextTags(task));
 						successCount++;
 					} else {
 						failCount++;
@@ -440,7 +438,7 @@ export class BatchContextMenu {
 				try {
 					const task = await plugin.cacheManager.getTaskInfo(path);
 					if (task) {
-						await plugin.taskService.updateProperty(task, property, value);
+						await uiTaskService(plugin).updateProperty(task, property, value);
 						successCount++;
 					} else {
 						failCount++;
@@ -490,7 +488,7 @@ export class BatchContextMenu {
 				try {
 					const task = await plugin.cacheManager.getTaskInfo(path);
 					if (task && task.archived !== archive) {
-						await plugin.toggleTaskArchive(task);
+						await uiPlugin(plugin).toggleTaskArchive(task);
 						successCount++;
 					} else if (task) {
 						// Task already in desired state
@@ -556,7 +554,7 @@ export class BatchContextMenu {
 				try {
 					const task = await plugin.cacheManager.getTaskInfo(path);
 					if (task) {
-						await plugin.taskService.deleteTask(task);
+						await uiTaskService(plugin).deleteTask(task);
 						successCount++;
 					} else {
 						failCount++;

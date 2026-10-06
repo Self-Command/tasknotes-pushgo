@@ -36,7 +36,11 @@ import {
 	getDatePart,
 } from "../utils/dateUtils";
 import { getNextUncompletedOccurrence, updateToNextScheduledOccurrence } from "../core/recurrence";
-import { processFolderTemplate, TaskTemplateData, FolderTemplateOptions } from "../utils/folderTemplateProcessor";
+import {
+	processFolderTemplate,
+	TaskTemplateData,
+	FolderTemplateOptions,
+} from "../utils/folderTemplateProcessor";
 
 import TaskNotesPlugin from "../main";
 import type { InterpolationValues, TranslationKey } from "../i18n";
@@ -297,7 +301,12 @@ export class TaskService {
 	 */
 	async createTask(
 		taskData: TaskCreationData,
-		options: { applyDefaults?: boolean; applyTemplate?: boolean } = {}
+		options: {
+			applyDefaults?: boolean;
+			applyTemplate?: boolean;
+			pushgoTaskId?: string;
+			pushgoPreparedPath?: (path: string) => Promise<void>;
+		} = {}
 	): Promise<{ file: TFile; taskInfo: TaskInfo }> {
 		const result = await this.taskCreationService.createTask(taskData, options);
 		await this.seedInitialOccurrence(result.taskInfo);
@@ -392,10 +401,7 @@ export class TaskService {
 		}
 
 		const defaults = this.plugin.settings.taskCreationDefaults;
-		if (
-			defaults.useOccurrenceBodyTemplate &&
-			defaults.occurrenceBodyTemplate?.trim()
-		) {
+		if (defaults.useOccurrenceBodyTemplate && defaults.occurrenceBodyTemplate?.trim()) {
 			return defaults.occurrenceBodyTemplate.trim();
 		}
 
@@ -474,9 +480,7 @@ export class TaskService {
 		return Object.keys(customFrontmatter).length > 0 ? customFrontmatter : undefined;
 	}
 
-	private buildOccurrenceTemplateTask(
-		processedTemplate: ProcessedTemplate
-	): {
+	private buildOccurrenceTemplateTask(processedTemplate: ProcessedTemplate): {
 		templateTask: Partial<TaskInfo>;
 		customFrontmatter?: Record<string, unknown>;
 	} {
@@ -494,9 +498,7 @@ export class TaskService {
 
 		return {
 			templateTask,
-			customFrontmatter: this.extractTemplateCustomFrontmatter(
-				processedTemplate.frontmatter
-			),
+			customFrontmatter: this.extractTemplateCustomFrontmatter(processedTemplate.frontmatter),
 		};
 	}
 
@@ -807,7 +809,9 @@ export class TaskService {
 	/** Seed only on activation; never backfill history or restart an exhausted series. */
 	private async seedInitialOccurrence(task: TaskInfo, previous?: TaskInfo): Promise<void> {
 		if (
-			!task.recurrence || task.recurrence_parent || task.archived ||
+			!task.recurrence ||
+			task.recurrence_parent ||
+			task.archived ||
 			task.occurrence_materialization !== "on_completion" ||
 			(previous?.recurrence && previous.occurrence_materialization === "on_completion")
 		) {
@@ -825,7 +829,10 @@ export class TaskService {
 					operation: "seed-initial-occurrence",
 					error,
 				});
-				publishUserNotice(this.plugin.emitter, "Task saved, but its first occurrence could not be created. Use Create occurrence to retry.");
+				publishUserNotice(
+					this.plugin.emitter,
+					"Task saved, but its first occurrence could not be created. Use Create occurrence to retry."
+				);
 			}
 		}
 	}
@@ -835,7 +842,10 @@ export class TaskService {
 		targetDate: string | Date,
 		overrides: Partial<TaskInfo> = {}
 	): Promise<TaskInfo> {
-		const date = typeof targetDate === "string" ? targetDate.slice(0, 10) : formatDateForStorage(targetDate);
+		const date =
+			typeof targetDate === "string"
+				? targetDate.slice(0, 10)
+				: formatDateForStorage(targetDate);
 		const key = JSON.stringify([parentTask.path, date]);
 		const pending = this.occurrenceMaterializations.get(key);
 		if (pending) return pending;
@@ -912,9 +922,10 @@ export class TaskService {
 				this.plugin.settings.occurrenceFilenameTemplateProperty?.trim() ||
 				"occurrenceFilenameTemplate";
 			const parentFile = this.plugin.app.vault.getAbstractFileByPath(parentTask.path);
-			const frontmatter = parentFile instanceof TFile
-				? this.plugin.app.metadataCache.getFileCache(parentFile)?.frontmatter
-				: undefined;
+			const frontmatter =
+				parentFile instanceof TFile
+					? this.plugin.app.metadataCache.getFileCache(parentFile)?.frontmatter
+					: undefined;
 			const override = frontmatter?.[propertyName];
 			const template =
 				typeof override === "string" && override.trim()
@@ -1114,8 +1125,7 @@ export class TaskService {
 					parentTask,
 					completedStatus: this.normalizeStatusValue(newValue),
 					currentTimestamp,
-					completionDate:
-						updatedOccurrence.completedDate || getCurrentDateString(),
+					completionDate: updatedOccurrence.completedDate || getCurrentDateString(),
 					maintainDueDateOffsetInRecurring:
 						this.plugin.settings.maintainDueDateOffsetInRecurring,
 				})
@@ -1580,13 +1590,17 @@ export class TaskService {
 		// Validate and plan inside the vault's existing file lock, without nesting it.
 		await processVaultFrontMatter(this.plugin.app, file, (frontmatter) => {
 			const persistedTask = this.plugin.fieldMapper.mapFromFrontmatter(
-				frontmatter, task.path, this.plugin.settings.storeTitleInFilename
+				frontmatter,
+				task.path,
+				this.plugin.settings.storeTitleInFilename
 			) as TaskInfo;
 			if (persistedTask.timeEntries?.some((entry) => !entry.endTime)) {
 				throw new Error("Time tracking is already active for this task");
 			}
 			const timeTrackingPlan = buildStartTimeTrackingPlan(
-				persistedTask, getCurrentTimestamp(), new Date().toISOString()
+				persistedTask,
+				getCurrentTimestamp(),
+				new Date().toISOString()
 			);
 			const { newEntry } = timeTrackingPlan;
 			const timeEntriesField = this.plugin.fieldMapper.toUserField("timeEntries");
@@ -1599,7 +1613,9 @@ export class TaskService {
 				dateModified: timeTrackingPlan.dateModified,
 			});
 			updatedTask = this.plugin.fieldMapper.mapFromFrontmatter(
-				frontmatter, task.path, this.plugin.settings.storeTitleInFilename
+				frontmatter,
+				task.path,
+				this.plugin.settings.storeTitleInFilename
 			) as TaskInfo;
 		});
 
@@ -1648,13 +1664,21 @@ export class TaskService {
 	/**
 	 * Stop time tracking for a task
 	 */
-	async stopTimeTracking(task: TaskInfo, stopTime?: string, expectedStartTime?: string): Promise<TaskInfo> {
+	async stopTimeTracking(
+		task: TaskInfo,
+		stopTime?: string,
+		expectedStartTime?: string
+	): Promise<TaskInfo> {
 		return this.withTimeTrackingLock(task.path, () =>
 			this.stopTimeTrackingLocked(task, stopTime, expectedStartTime)
 		);
 	}
 
-	private async stopTimeTrackingLocked(task: TaskInfo, stopTime?: string, expectedStartTime?: string): Promise<TaskInfo> {
+	private async stopTimeTrackingLocked(
+		task: TaskInfo,
+		stopTime?: string,
+		expectedStartTime?: string
+	): Promise<TaskInfo> {
 		const file = this.plugin.app.vault.getAbstractFileByPath(task.path);
 		if (!(file instanceof TFile)) {
 			throw new Error(`Cannot find task file: ${task.path}`);
@@ -1663,7 +1687,9 @@ export class TaskService {
 		let updatedTask!: TaskInfo;
 		await processVaultFrontMatter(this.plugin.app, file, (frontmatter) => {
 			const persistedTask = this.plugin.fieldMapper.mapFromFrontmatter(
-				frontmatter, task.path, this.plugin.settings.storeTitleInFilename
+				frontmatter,
+				task.path,
+				this.plugin.settings.storeTitleInFilename
 			) as TaskInfo;
 			const activeSession = persistedTask.timeEntries?.find((entry) => !entry.endTime);
 			if (!activeSession) {
@@ -1672,18 +1698,25 @@ export class TaskService {
 			if (expectedStartTime !== undefined && activeSession.startTime !== expectedStartTime) {
 				throw new Error("Active time tracking session has changed");
 			}
-			if (stopTime !== undefined && (
-				!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/.test(stopTime) ||
-				!Number.isFinite(new Date(stopTime.slice(0, 10)).getTime()) ||
-				new Date(stopTime.slice(0, 10)).toISOString().slice(0, 10) !== stopTime.slice(0, 10) ||
-				!Number.isFinite(new Date(stopTime).getTime()) ||
-				new Date(stopTime).getTime() < new Date(activeSession.startTime).getTime() ||
-				new Date(stopTime).getTime() > Date.now()
-			)) {
+			if (
+				stopTime !== undefined &&
+				(!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/.test(
+					stopTime
+				) ||
+					!Number.isFinite(new Date(stopTime.slice(0, 10)).getTime()) ||
+					new Date(stopTime.slice(0, 10)).toISOString().slice(0, 10) !==
+						stopTime.slice(0, 10) ||
+					!Number.isFinite(new Date(stopTime).getTime()) ||
+					new Date(stopTime).getTime() < new Date(activeSession.startTime).getTime() ||
+					new Date(stopTime).getTime() > Date.now())
+			) {
 				throw new Error("Invalid time tracking stop timestamp");
 			}
 			const timeTrackingPlan = buildStopTimeTrackingPlan(
-				persistedTask, activeSession, getCurrentTimestamp(), stopTime ?? new Date().toISOString()
+				persistedTask,
+				activeSession,
+				getCurrentTimestamp(),
+				stopTime ?? new Date().toISOString()
 			);
 			const timeEntriesField = this.plugin.fieldMapper.toUserField("timeEntries");
 			const dateModifiedField = this.plugin.fieldMapper.toUserField("dateModified");
@@ -1696,7 +1729,9 @@ export class TaskService {
 				dateModified: timeTrackingPlan.dateModified,
 			});
 			updatedTask = this.plugin.fieldMapper.mapFromFrontmatter(
-				frontmatter, task.path, this.plugin.settings.storeTitleInFilename
+				frontmatter,
+				task.path,
+				this.plugin.settings.storeTitleInFilename
 			) as TaskInfo;
 		});
 
@@ -1980,7 +2015,9 @@ export class TaskService {
 					frontmatterText !== null ? `---\n${frontmatterText}\n---\n\n` : "";
 				const finalBody = resetBody.trimEnd();
 				resetDetails = resetBody.replace(/\r\n/g, "\n").trimEnd();
-				return finalBody.length > 0 ? `${frontmatterBlock}${finalBody}\n` : frontmatterBlock;
+				return finalBody.length > 0
+					? `${frontmatterBlock}${finalBody}\n`
+					: frontmatterBlock;
 			});
 
 			if (resetDetails !== null) {

@@ -237,6 +237,16 @@ export function renderIntegrationsTab(
 	save: () => void
 ): void {
 	container.empty();
+	if (plugin.pushgo) {
+		new Setting(container)
+			.setName("定时通知与拍照打卡")
+			.setDesc("配置服务、频道、附件目录，查看同步状态。")
+			.addButton((button) =>
+				button.setButtonText("打开设置和同步中心").onClick(() => {
+					void plugin.pushgo?.openPanel();
+				})
+			);
+	}
 
 	const translate = (key: TranslationKey, params?: Record<string, string | number>) =>
 		plugin.i18n.translate(key, params);

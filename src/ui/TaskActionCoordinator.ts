@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 import { TFile } from "obsidian";
 import type TaskNotesPlugin from "../main";
 import type { TaskInfo } from "../types";
@@ -57,7 +58,7 @@ export class TaskActionCoordinator {
 
 	async startTimeTracking(task: TaskInfo, description?: string): Promise<TaskInfo> {
 		try {
-			let updatedTask = await this.plugin.taskService.startTimeTracking(task);
+			let updatedTask = await uiTaskService(this.plugin).startTimeTracking(task);
 
 			const trimmedDescription = description?.trim();
 			if (
@@ -68,7 +69,7 @@ export class TaskActionCoordinator {
 				const latestEntry = updatedTask.timeEntries[updatedTask.timeEntries.length - 1];
 				if (latestEntry && !latestEntry.endTime) {
 					latestEntry.description = trimmedDescription;
-					updatedTask = await this.plugin.taskService.updateTask(updatedTask, {
+					updatedTask = await uiTaskService(this.plugin).updateTask(updatedTask, {
 						timeEntries: updatedTask.timeEntries,
 					});
 				}
@@ -97,7 +98,7 @@ export class TaskActionCoordinator {
 
 	async stopTimeTracking(task: TaskInfo): Promise<TaskInfo> {
 		try {
-			const updatedTask = await this.plugin.taskService.stopTimeTracking(task);
+			const updatedTask = await uiTaskService(this.plugin).stopTimeTracking(task);
 			showNotice("Time tracking stopped");
 			this.requestStatusBarUpdate();
 			return updatedTask;
@@ -130,15 +131,18 @@ export class TaskActionCoordinator {
 				return;
 			}
 
-			const selected = trackedTasks.length === 1
-				? trackedTasks[0]
-				: await new Promise<TaskInfo | null>((resolve) => {
-					openTaskSelector(this.plugin, trackedTasks, resolve, {
-						title: this.plugin.i18n.translate("commands.stopActiveTimeTracking"),
-						allowCreate: false,
-						includeArchived: true,
-					});
-				});
+			const selected =
+				trackedTasks.length === 1
+					? trackedTasks[0]
+					: await new Promise<TaskInfo | null>((resolve) => {
+							openTaskSelector(this.plugin, trackedTasks, resolve, {
+								title: this.plugin.i18n.translate(
+									"commands.stopActiveTimeTracking"
+								),
+								allowCreate: false,
+								includeArchived: true,
+							});
+						});
 			if (!selected) return;
 
 			// The tracker may have stopped, or the note been removed, while choosing.
@@ -277,7 +281,7 @@ export class TaskActionCoordinator {
 			let failCount = 0;
 			for (const candidate of candidates) {
 				try {
-					await this.plugin.taskService.updateProperty(
+					await uiTaskService(this.plugin).updateProperty(
 						candidate.task,
 						"scheduled",
 						candidate.nextScheduled
@@ -327,7 +331,7 @@ export class TaskActionCoordinator {
 							return sanitizedEntry;
 						});
 
-						await this.plugin.taskService.updateTask(task, {
+						await uiTaskService(this.plugin).updateTask(task, {
 							timeEntries: sanitizedEntries,
 						});
 

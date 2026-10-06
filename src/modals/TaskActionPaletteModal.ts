@@ -1,3 +1,4 @@
+import { uiPlugin } from "../pushgo/uiOrigin";
 import {
 	App,
 	FuzzySuggestModal,
@@ -106,7 +107,11 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 				keywords: ["status", statusConfig.value, statusConfig.label, "change", "set"],
 				isApplicable: () => !isCurrentStatus,
 				execute: async (task) => {
-					await this.plugin.updateTaskProperty(task, "status", statusConfig.value);
+					await uiPlugin(this.plugin).updateTaskProperty(
+						task,
+						"status",
+						statusConfig.value
+					);
 					new Notice(`Status changed to ${statusConfig.label}`);
 				},
 			});
@@ -124,7 +129,11 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 				keywords: ["priority", priorityConfig.value, priorityConfig.label, "change", "set"],
 				isApplicable: () => !isCurrentPriority,
 				execute: async (task) => {
-					await this.plugin.updateTaskProperty(task, "priority", priorityConfig.value);
+					await uiPlugin(this.plugin).updateTaskProperty(
+						task,
+						"priority",
+						priorityConfig.value
+					);
 					new Notice(`Priority changed to ${priorityConfig.label}`);
 				},
 			});
@@ -165,7 +174,7 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 				keywords: ["clear", "remove", "due", "date"],
 				isApplicable: (task) => !!task.due,
 				execute: async (task) => {
-					await this.plugin.updateTaskProperty(task, "due", undefined);
+					await uiPlugin(this.plugin).updateTaskProperty(task, "due", undefined);
 					new Notice("Due date cleared");
 				},
 			},
@@ -178,7 +187,7 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 				keywords: ["clear", "remove", "scheduled", "date"],
 				isApplicable: (task) => !!task.scheduled,
 				execute: async (task) => {
-					await this.plugin.updateTaskProperty(task, "scheduled", undefined);
+					await uiPlugin(this.plugin).updateTaskProperty(task, "scheduled", undefined);
 					new Notice("Scheduled date cleared");
 				},
 			}
@@ -252,7 +261,7 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 				keywords: ["archive", this.task.archived ? "unarchive" : "archive", "organize"],
 				isApplicable: () => true,
 				execute: async (task) => {
-					await this.plugin.toggleTaskArchive(task);
+					await uiPlugin(this.plugin).toggleTaskArchive(task);
 					new Notice(task.archived ? "Task unarchived" : "Task archived");
 				},
 			}
@@ -484,7 +493,7 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 					return currentDate !== preset.value;
 				},
 				execute: async (task) => {
-					await this.plugin.updateTaskProperty(task, property, preset.value);
+					await uiPlugin(this.plugin).updateTaskProperty(task, property, preset.value);
 					new Notice(`${noticeLabel} set`);
 				},
 			});
@@ -522,7 +531,9 @@ export class TaskActionPaletteModal extends FuzzySuggestModal<TaskAction> {
 				error: error instanceof Error ? error.message : String(error),
 			});
 			new Notice(
-				this.plugin.i18n.translate("contextMenus.task.organization.notices.addToProjectFailed")
+				this.plugin.i18n.translate(
+					"contextMenus.task.organization.notices.addToProjectFailed"
+				)
 			);
 		}
 	}

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmCommand = process.env.npm_execpath ? process.execPath : "npm";
+const npmPrefix = process.env.npm_execpath ? [process.env.npm_execpath] : [];
 
 const tasks = [
 	["run", "lint:ts"],
@@ -12,7 +13,7 @@ const tasks = [
 let failed = false;
 
 for (const args of tasks) {
-	const result = spawnSync(npmCommand, args, {
+	const result = spawnSync(npmCommand, [...npmPrefix, ...args], {
 		stdio: "inherit",
 	});
 

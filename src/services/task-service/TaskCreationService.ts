@@ -110,6 +110,8 @@ export interface TaskCreationServiceDependencies {
 }
 
 export interface TaskCreationOptions {
+	pushgoTaskId?: string;
+	pushgoPreparedPath?: (path: string) => Promise<void>;
 	applyDefaults?: boolean;
 	applyTemplate?: boolean;
 }
@@ -212,7 +214,12 @@ export class TaskCreationService {
 					: filenameTitle;
 			const titleIsRepresentedByFilename =
 				runtime.settings.storeTitleInFilename &&
-				isTitleRepresentedByFilename(title, filenameTitle, uniqueFilename, expectedFilename);
+				isTitleRepresentedByFilename(
+					title,
+					filenameTitle,
+					uniqueFilename,
+					expectedFilename
+				);
 
 			const completeTaskData: Partial<TaskInfo> = {
 				title,
@@ -336,12 +343,14 @@ export class TaskCreationService {
 			}
 			tagsArray = getFrontmatterTags(finalFrontmatter.tags);
 
+			if (options.pushgoTaskId) finalFrontmatter.pushgo_task_id = options.pushgoTaskId;
 			const yamlHeader = stringifyYaml(finalFrontmatter);
 			let content = `---\n${yamlHeader}---\n\n`;
 			if (normalizedBody.length > 0) {
 				content += `${normalizedBody}\n`;
 			}
 
+			await options.pushgoPreparedPath?.(fullPath);
 			const file = await runtime.app.vault.create(fullPath, content);
 
 			const taskInfo: TaskInfo = {

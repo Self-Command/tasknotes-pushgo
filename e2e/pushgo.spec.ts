@@ -1,0 +1,50 @@
+import {test,expect} from '@playwright/test';
+import {launchObsidian,closeObsidian,type ObsidianApp} from './obsidian';
+import {makeApp} from '../../tasknotes-pushgo-server/src/app';
+import {randomBytes,randomUUID} from 'node:crypto';
+import {mkdtemp,rm,copyFile,mkdir,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {resolve} from 'node:path';
+import sharp from '../../tasknotes-pushgo-server/node_modules/sharp';
+let app:ObsidianApp,service:Awaited<ReturnType<typeof makeApp>>,dir:string;
+test.beforeAll(async()=>{
+ dir=await mkdtemp(resolve(tmpdir(),'tn-obsidian-'));
+ service=await makeApp({dataDir:dir,publicUrl:'http://127.0.0.1:8790',password:'obsidian-test-password',key:randomBytes(32),gatewayToken:'fake',allowedGateways:[],allowHttp:true});service.store.updateSettings({...service.store.settings(),reportsEnabled:false});await service.app.listen({host:'127.0.0.1',port:8790});
+ const vault=process.env.TASKNOTES_E2E_VAULT_DIR;
+ if(!vault || !resolve(vault).replaceAll('\\','/').startsWith(resolve('.pushgo-e2e-vault').replaceAll('\\','/')+'/'))throw new Error('Use a fresh .pushgo-e2e-vault child for this test');
+ const pluginDir=resolve(vault,'.obsidian/plugins/tasknotes');await mkdir(pluginDir,{recursive:true});await mkdir(resolve(vault,'Tasks'),{recursive:true});
+ await writeFile(resolve(vault,'.obsidian/community-plugins.json'),'["tasknotes"]');await writeFile(resolve(vault,'.obsidian/app.json'),'{}');await writeFile(resolve(pluginDir,'data.json'),JSON.stringify({tasksFolder:'Tasks',enableNLP:false,disableWelcomeModal:true}));
+ for(const f of ['main.js','styles.css','manifest.json'])await copyFile(resolve(f),resolve(pluginDir,f));
+ app=await launchObsidian();
+});
+test.afterAll(async()=>{if(app)await closeObsidian(app);if(service)await service.app.close();if(dir)await rm(dir,{recursive:true,force:true});});
+test('native task creation, raw MD isolation, check-in pull and managed block preservation',async()=>{
+ test.setTimeout(120000);const page=app.page;
+ await page.evaluate(async()=>{
+  const p=(window as any).app.plugins.plugins.tasknotes;await p.onReady();
+  p.settings.tasksFolder='Tasks';p.settings.enableNLP=false;p.settings.openTaskAfterCreation='none';p.settings.uiLanguage='en';
+  await p.pushgo.configure({...p.pushgo.config,enabled:true,serviceUrl:'http://127.0.0.1:8790',attachmentDir:'PushGo附件'});await p.pushgo.login('obsidian-test-password');
+  p.openTaskCreationModal({title:'原生界面验收 '+Date.now(),scheduled:new Date(Date.now()+45*60000).toISOString(),due:new Date(Date.now()+60*60000).toISOString()});
+ });
+ await page.locator('.modal').getByRole('button',{name:/^Save$|^保存$/i}).last().click();
+ await expect.poll(()=>service.store.tasks().length).toBe(1);const remote=service.store.tasks()[0]!;
+ const originalStart=remote.plan.scheduled;
+ const localPath=await page.evaluate(async()=>{const p=(window as any).app.plugins.plugins.tasknotes;return Object.values(p.pushgo.state.tasks).at(-1).path;});
+ await page.evaluate(async(path)=>{const a=(window as any).app;const f=a.vault.getAbstractFileByPath(path);await a.fileManager.processFrontMatter(f,(fm:any)=>{fm.scheduled='2030-01-01T09:00';});},localPath);
+ await page.waitForTimeout(700);
+ await page.evaluate(async(path)=>{const p=(window as any).app.plugins.plugins.tasknotes;const t=await p.cacheManager.getTaskInfo(path);await p.pushgo.uiService().updateProperty(t,'priority','high');await p.pushgo.sync();},localPath);
+ expect(service.store.task(remote.id).plan.scheduled).toBe(originalStart);expect(service.store.task(remote.id).plan.priority).toBe('high');
+ // Move the instance through the same reviewed TaskNotes settings action to open both windows.
+ await page.evaluate(async(path)=>{const p=(window as any).app.plugins.plugins.tasknotes;const t=await p.cacheManager.getTaskInfo(path);await p.pushgo.saveTaskOptions(t,{scheduled:new Date(Date.now()+5*60000).toISOString(),due:new Date(Date.now()+9*60000).toISOString(),startLeadMinutes:10,endLeadMinutes:10});await p.pushgo.sync();},localPath);
+ const current=service.store.task(remote.id),upload=service.store.allocateUpload(remote.id,'end',current.version);
+ const bytes=await sharp({create:{width:8,height:8,channels:3,background:'blue'}}).jpeg().toBuffer();
+ const login=await service.app.inject({method:'POST',url:'/tasknotes/v1/auth/login',payload:{password:'obsidian-test-password',client:'plugin'}}),headers={authorization:'Bearer '+login.json().token};
+ await service.app.inject({method:'PUT',url:'/tasknotes/v1/uploads/'+upload,headers:{...headers,'content-type':'application/octet-stream'},payload:bytes});
+ service.store.submit(remote.id,'end',{version:current.version,uploadId:upload,submitId:randomUUID(),note:'照片回写验收'});
+ await page.evaluate(async()=>{const p=(window as any).app.plugins.plugins.tasknotes;await Promise.all([p.pushgo.sync(),p.pushgo.sync()]);});
+ const result=await page.evaluate(async(path)=>{const a=(window as any).app;return {text:await a.vault.read(a.vault.getAbstractFileByPath(path)),photos:a.vault.getFiles().filter((f:any)=>f.path.startsWith('PushGo附件/')).map((f:any)=>f.path)};},localPath);
+ expect(result.photos).toHaveLength(1);expect(result.text).toContain('结束打卡');expect(result.text).toContain('![[PushGo附件/');
+ await page.evaluate(async(path)=>{const a=(window as any).app;const f=a.vault.getAbstractFileByPath(path);await a.vault.process(f,(text:string)=>text.replace('结果：成功','结果：用户修改'));await a.plugins.plugins.tasknotes.pushgo.sync();},localPath);
+ const preserved=await page.evaluate(async(path)=>{const a=(window as any).app;return a.vault.read(a.vault.getAbstractFileByPath(path));},localPath);expect(preserved).toContain('结果：用户修改');
+ await page.evaluate(async()=>{await (window as any).app.plugins.plugins.tasknotes.pushgo.openPanel();});await expect(page.getByText('TaskNotes × PushGo',{exact:true})).toBeVisible();await page.screenshot({path:'test-results/pushgo-obsidian-settings.png'});
+});

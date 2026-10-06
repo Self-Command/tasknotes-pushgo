@@ -80,11 +80,9 @@ describe("Issue #932: current task status and priority cycle commands", () => {
 		expect(plugin.app.workspace.getActiveFile).toHaveBeenCalledTimes(1);
 		expect(plugin.cacheManager.getTaskInfo).toHaveBeenCalledWith(task.path);
 		expect(plugin.statusManager.getNextStatus).toHaveBeenCalledWith("open");
-		expect(plugin.updateTaskProperty).toHaveBeenCalledWith(
-			task,
-			"status",
-			"in-progress"
-		);
+		expect(plugin.updateTaskProperty).toHaveBeenCalledWith(task, "status", "in-progress", {
+			pushgoOrigin: "tasknotes_ui",
+		});
 	});
 
 	it("cycles the active task priority through the existing PriorityManager sequence", async () => {
@@ -96,7 +94,9 @@ describe("Issue #932: current task status and priority cycle commands", () => {
 		expect(plugin.app.workspace.getActiveFile).toHaveBeenCalledTimes(1);
 		expect(plugin.cacheManager.getTaskInfo).toHaveBeenCalledWith(task.path);
 		expect(plugin.priorityManager.getNextPriority).toHaveBeenCalledWith("normal");
-		expect(plugin.updateTaskProperty).toHaveBeenCalledWith(task, "priority", "high");
+		expect(plugin.updateTaskProperty).toHaveBeenCalledWith(task, "priority", "high", {
+			pushgoOrigin: "tasknotes_ui",
+		});
 	});
 
 	it("does not update a task when no file is active", async () => {

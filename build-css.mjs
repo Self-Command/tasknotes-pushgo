@@ -1,48 +1,49 @@
-import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, writeFileSync } from "fs";
+import { join } from "path";
 
 const CSS_FILES = [
-    // Core System Files
-    'styles/variables.css',          // CSS custom properties and design system variables
-    'styles/utilities.css',          // Scoped utility classes for layout, spacing, typography
-    'styles/base.css',               // Basic styles, animations, card components, and layout
-    
-    // BEM Component Files
-    'styles/task-card-bem.css',      // TaskCard component with proper BEM scoping
-    'styles/task-inline-widget.css', // Inline task widget for editor with proper BEM scoping
-    'styles/note-card-bem.css',      // NoteCard component with proper BEM scoping
-    'styles/filter-bar-bem.css',     // FilterBar component with proper BEM scoping
-    'styles/filter-heading.css',     // FilterHeading component with proper BEM scoping
-    'styles/search-box.css',         // SearchBox component with proper BEM scoping
-    'styles/modal-bem.css',          // Modal components with proper BEM scoping
-    'styles/task-modal.css',         // Task modal components (Google Keep/Todoist style)
-    'styles/reminder-modal.css',     // Reminder modal component with proper BEM scoping
-    'styles/device-code-modal.css',  // OAuth device-code modal
-    'styles/date-picker.css',        // Enhanced date/time picker styling
-    'styles/task-selector-with-create-modal.css', // TaskSelectorWithCreateModal component with proper BEM scoping
-    'styles/file-selector-modal.css', // FileSelectorModal component with proper BEM scoping
-    'styles/unscheduled-tasks-selector-modal.css', // UnscheduledTasksSelectorModal component with proper BEM scoping
-    'styles/task-action-palette-modal.css', // TaskActionPaletteModal component with proper BEM scoping
-    'styles/time-entry-editor-modal.css', // TimeEntryEditorModal component with proper BEM scoping
-    'styles/relationships.css',  // RelationshipsWidget component with proper BEM scoping
-    'styles/task-card-note-widget.css',  // TaskCardNoteWidget component with proper BEM scoping
-    
-    // BEM View Files
-    'styles/task-list-view.css',     // TaskListView component with proper BEM scoping
-    'styles/calendar-view.css',      // CalendarView component with proper BEM scoping
-    'styles/advanced-calendar-view.css', // AdvancedCalendarView component with proper BEM scoping
-    'styles/kanban-view.css',        // KanbanView component with proper BEM scoping
-    'styles/agenda-view.css',        // AgendaView component with proper BEM scoping
-    'styles/pomodoro-view.css',      // PomodoroView component with proper BEM scoping
-    'styles/pomodoro-stats-view.css', // PomodoroStatsView component with proper BEM scoping
-    'styles/stats-view.css',         // StatsView component with proper BEM scoping
-    'styles/release-notes-view.css', // Release notes view typography
-    'styles/settings-view.css',      // SettingsView component with proper BEM scoping
-    'styles/field-manager.css',      // Modal field manager settings
-    'styles/webhook-settings.css',   // Webhook settings UI with proper BEM scoping
-    'styles/status-bar.css',         // StatusBar component with proper BEM scoping
-    'styles/bases-views.css',        // Bases integration views (list and kanban)
-    'styles/static-style-utilities.css' // Static style utility classes migrated from inline styles
+	".pushgo-build.css",
+	// Core System Files
+	"styles/variables.css", // CSS custom properties and design system variables
+	"styles/utilities.css", // Scoped utility classes for layout, spacing, typography
+	"styles/base.css", // Basic styles, animations, card components, and layout
+
+	// BEM Component Files
+	"styles/task-card-bem.css", // TaskCard component with proper BEM scoping
+	"styles/task-inline-widget.css", // Inline task widget for editor with proper BEM scoping
+	"styles/note-card-bem.css", // NoteCard component with proper BEM scoping
+	"styles/filter-bar-bem.css", // FilterBar component with proper BEM scoping
+	"styles/filter-heading.css", // FilterHeading component with proper BEM scoping
+	"styles/search-box.css", // SearchBox component with proper BEM scoping
+	"styles/modal-bem.css", // Modal components with proper BEM scoping
+	"styles/task-modal.css", // Task modal components (Google Keep/Todoist style)
+	"styles/reminder-modal.css", // Reminder modal component with proper BEM scoping
+	"styles/device-code-modal.css", // OAuth device-code modal
+	"styles/date-picker.css", // Enhanced date/time picker styling
+	"styles/task-selector-with-create-modal.css", // TaskSelectorWithCreateModal component with proper BEM scoping
+	"styles/file-selector-modal.css", // FileSelectorModal component with proper BEM scoping
+	"styles/unscheduled-tasks-selector-modal.css", // UnscheduledTasksSelectorModal component with proper BEM scoping
+	"styles/task-action-palette-modal.css", // TaskActionPaletteModal component with proper BEM scoping
+	"styles/time-entry-editor-modal.css", // TimeEntryEditorModal component with proper BEM scoping
+	"styles/relationships.css", // RelationshipsWidget component with proper BEM scoping
+	"styles/task-card-note-widget.css", // TaskCardNoteWidget component with proper BEM scoping
+
+	// BEM View Files
+	"styles/task-list-view.css", // TaskListView component with proper BEM scoping
+	"styles/calendar-view.css", // CalendarView component with proper BEM scoping
+	"styles/advanced-calendar-view.css", // AdvancedCalendarView component with proper BEM scoping
+	"styles/kanban-view.css", // KanbanView component with proper BEM scoping
+	"styles/agenda-view.css", // AgendaView component with proper BEM scoping
+	"styles/pomodoro-view.css", // PomodoroView component with proper BEM scoping
+	"styles/pomodoro-stats-view.css", // PomodoroStatsView component with proper BEM scoping
+	"styles/stats-view.css", // StatsView component with proper BEM scoping
+	"styles/release-notes-view.css", // Release notes view typography
+	"styles/settings-view.css", // SettingsView component with proper BEM scoping
+	"styles/field-manager.css", // Modal field manager settings
+	"styles/webhook-settings.css", // Webhook settings UI with proper BEM scoping
+	"styles/status-bar.css", // StatusBar component with proper BEM scoping
+	"styles/bases-views.css", // Bases integration views (list and kanban)
+	"styles/static-style-utilities.css", // Static style utility classes migrated from inline styles
 ];
 
 const MAIN_CSS_TEMPLATE = `/* TaskNotes Plugin Styles */
@@ -82,44 +83,43 @@ const MAIN_CSS_TEMPLATE = `/* TaskNotes Plugin Styles */
 const REMAINING_STYLES = ``;
 
 function buildCSS() {
-    console.log('Building CSS...');
-    
-    let combinedCSS = MAIN_CSS_TEMPLATE;
-    
-    // Read and concatenate each CSS file
-    for (const cssFile of CSS_FILES) {
-        try {
-            const content = readFileSync(cssFile, 'utf8');
-            
-            // Add a section header comment
-            const filename = cssFile.split('/').pop();
-            combinedCSS += `\n/* ===== ${filename.toUpperCase()} ===== */\n`;
-            combinedCSS += content;
-            combinedCSS += '\n';
-            
-            console.log(`[OK] Included ${cssFile}`);
-        } catch (error) {
-            console.error(`[ERROR] Error reading ${cssFile}:`, error.message);
-            process.exit(1);
-        }
-    }
-    
-    // Add the remaining modal styles
-    combinedCSS += REMAINING_STYLES;
-    
-    // Write the combined CSS to styles.css
-    try {
-        writeFileSync('styles.css', combinedCSS);
-        console.log('[OK] Built styles.css successfully');
-        
-        // Count lines for reference
-        const lineCount = combinedCSS.split('\n').length;
-        console.log(`[OK] Generated ${lineCount} lines of CSS`);
-        
-    } catch (error) {
-        console.error('[ERROR] Error writing styles.css:', error.message);
-        process.exit(1);
-    }
+	console.log("Building CSS...");
+
+	let combinedCSS = MAIN_CSS_TEMPLATE;
+
+	// Read and concatenate each CSS file
+	for (const cssFile of CSS_FILES) {
+		try {
+			const content = readFileSync(cssFile, "utf8");
+
+			// Add a section header comment
+			const filename = cssFile.split("/").pop();
+			combinedCSS += `\n/* ===== ${filename.toUpperCase()} ===== */\n`;
+			combinedCSS += content;
+			combinedCSS += "\n";
+
+			console.log(`[OK] Included ${cssFile}`);
+		} catch (error) {
+			console.error(`[ERROR] Error reading ${cssFile}:`, error.message);
+			process.exit(1);
+		}
+	}
+
+	// Add the remaining modal styles
+	combinedCSS += REMAINING_STYLES;
+
+	// Write the combined CSS to styles.css
+	try {
+		writeFileSync("styles.css", combinedCSS);
+		console.log("[OK] Built styles.css successfully");
+
+		// Count lines for reference
+		const lineCount = combinedCSS.split("\n").length;
+		console.log(`[OK] Generated ${lineCount} lines of CSS`);
+	} catch (error) {
+		console.error("[ERROR] Error writing styles.css:", error.message);
+		process.exit(1);
+	}
 }
 
 // Run the build

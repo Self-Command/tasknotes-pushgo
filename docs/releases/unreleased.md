@@ -41,3 +41,9 @@ When a change has user-facing documentation, include a canonical tasknotes.dev l
 ## Fixed
 
 - (#2382) Fixed Kanban settings being ignored in existing `.base` files when nested under `options:` or `config:`, including empty-column hiding and pinned columns. Newly generated default files and exported v3 views now write settings directly on each view; existing files remain unchanged. See [Kanban View](https://tasknotes.dev/views/kanban-view/#configuration). Thanks to @techwiththiru for reporting this.
+
+## PushGo 二开
+
+- 新增一次性任务定时推送、独立开始/结束拍照打卡和早晚统计集成。
+- 新增界面操作同步、离线待同步队列、冲突提示和独立附件目录。
+- 新增“拉取打卡记录和照片”命令；启动和恢复前台自动同步。直接修改 Markdown 不更新服务器计划。

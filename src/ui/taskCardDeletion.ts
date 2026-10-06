@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 import { App, Modal, Notice } from "obsidian";
 import TaskNotesPlugin from "../main";
 import { TaskInfo } from "../types";
@@ -137,7 +138,7 @@ export async function showDeleteConfirmationModal(
 	return new Promise((resolve, reject) => {
 		const modal = new DeleteTaskConfirmationModal(plugin.app, task, async () => {
 			try {
-				await plugin.taskService.deleteTask(task);
+				await uiTaskService(plugin).deleteTask(task);
 				resolve();
 			} catch (error) {
 				reject(error instanceof Error ? error : new Error(String(error)));

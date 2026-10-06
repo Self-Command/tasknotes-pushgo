@@ -1,3 +1,4 @@
+import { uiPlugin, uiTaskService } from "../pushgo/uiOrigin";
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- Legacy Bases view rendering narrows DOM references through lifecycle checks. */
 import { Menu, Notice, TFile, setIcon } from "obsidian";
 import type { BasesView, BasesViewFactory } from "obsidian";
@@ -251,9 +252,7 @@ export class TaskListView extends BasesViewBase {
 		const subGroupKeys = this.currentSubGroupKeysByParent.get(groupKey);
 		if (!subGroupKeys || subGroupKeys.length === 0) return;
 
-		const allSubGroupsCollapsed = subGroupKeys.every((key) =>
-			this.collapsedSubGroups.has(key)
-		);
+		const allSubGroupsCollapsed = subGroupKeys.every((key) => this.collapsedSubGroups.has(key));
 		const menu = new Menu();
 
 		menu.addItem((item) => {
@@ -894,11 +893,7 @@ export class TaskListView extends BasesViewBase {
 		restoreCardDraggable();
 
 		cardEl.addEventListener("pointerdown", captureDragOrigin, { capture: true });
-		cardEl.addEventListener(
-			"mousedown",
-			captureDragOrigin,
-			{ capture: true }
-		);
+		cardEl.addEventListener("mousedown", captureDragOrigin, { capture: true });
 		cardEl.addEventListener("mouseup", (e: MouseEvent) => {
 			if (!dragOriginSuppressed && isPrimaryPress(e)) {
 				e.stopPropagation();
@@ -1426,7 +1421,7 @@ export class TaskListView extends BasesViewBase {
 					coerceGroupKeyForFrontmatter: (property, groupKey) =>
 						this.coerceGroupKeyForFrontmatter(property, groupKey),
 					updateCompletedDateInFrontmatter: (frontmatter, status, isRecurring) =>
-						this.plugin.taskService.updateCompletedDateInFrontmatter(
+						uiTaskService(this.plugin).updateCompletedDateInFrontmatter(
 							frontmatter,
 							status,
 							isRecurring
@@ -1450,7 +1445,7 @@ export class TaskListView extends BasesViewBase {
 							getCompletedDate: () => new Date().toISOString().split("T")[0],
 						});
 						if (updatedTask) {
-							await this.plugin.taskService.applyPropertyChangeSideEffects(
+							await uiTaskService(this.plugin).applyPropertyChangeSideEffects(
 								file,
 								originalTask,
 								updatedTask,
@@ -2420,7 +2415,11 @@ export class TaskListView extends BasesViewBase {
 
 	private async handleGroupToggle(groupKey: string): Promise<void> {
 		if (this.isSubGroupKey(groupKey)) {
-			this.setSetEntry(this.collapsedSubGroups, groupKey, !this.collapsedSubGroups.has(groupKey));
+			this.setSetEntry(
+				this.collapsedSubGroups,
+				groupKey,
+				!this.collapsedSubGroups.has(groupKey)
+			);
 		} else {
 			this.setSetEntry(this.collapsedGroups, groupKey, !this.collapsedGroups.has(groupKey));
 		}
@@ -2465,8 +2464,7 @@ export class TaskListView extends BasesViewBase {
 				pathToProps,
 				collapsedGroups: this.collapsedGroups,
 				collapsedSubGroups: this.collapsedSubGroups,
-				convertGroupKeyToString: (key) =>
-					this.dataAdapter.convertGroupKeyToString(key),
+				convertGroupKeyToString: (key) => this.dataAdapter.convertGroupKeyToString(key),
 			});
 		}
 
@@ -2577,7 +2575,7 @@ export class TaskListView extends BasesViewBase {
 				const actionDate = this.getTaskActionDate(task);
 				await this.plugin.toggleRecurringTaskComplete(task, actionDate);
 			} else {
-				await this.plugin.toggleTaskStatus(task);
+				await uiPlugin(this.plugin).toggleTaskStatus(task);
 			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
@@ -2610,7 +2608,11 @@ export class TaskListView extends BasesViewBase {
 			onSelect: (newPriority) => {
 				void (async () => {
 					try {
-						await this.plugin.updateTaskProperty(task, "priority", newPriority);
+						await uiPlugin(this.plugin).updateTaskProperty(
+							task,
+							"priority",
+							newPriority
+						);
 					} catch (error) {
 						tasknotesLogger.error(
 							"[TaskNotes][TaskListView] Failed to update priority",
@@ -2633,13 +2635,17 @@ export class TaskListView extends BasesViewBase {
 			onSelect: (newRecurrence: string | null, anchor?: "scheduled" | "completion") => {
 				void (async () => {
 					try {
-						await this.plugin.updateTaskProperty(
+						await uiPlugin(this.plugin).updateTaskProperty(
 							task,
 							"recurrence",
 							newRecurrence || undefined
 						);
 						if (anchor !== undefined) {
-							await this.plugin.updateTaskProperty(task, "recurrence_anchor", anchor);
+							await uiPlugin(this.plugin).updateTaskProperty(
+								task,
+								"recurrence_anchor",
+								anchor
+							);
 						}
 					} catch (error) {
 						tasknotesLogger.error(
@@ -2660,7 +2666,7 @@ export class TaskListView extends BasesViewBase {
 		const modal = new ReminderModal(this.plugin.app, this.plugin, task, (reminders) => {
 			void (async () => {
 				try {
-					await this.plugin.updateTaskProperty(
+					await uiPlugin(this.plugin).updateTaskProperty(
 						task,
 						"reminders",
 						reminders.length > 0 ? reminders : undefined
@@ -2699,7 +2705,7 @@ export class TaskListView extends BasesViewBase {
 						} else {
 							finalValue = dateValue;
 						}
-						await this.plugin.updateTaskProperty(task, dateType, finalValue);
+						await uiPlugin(this.plugin).updateTaskProperty(task, dateType, finalValue);
 					} catch (error) {
 						const message = error instanceof Error ? error.message : String(error);
 						tasknotesLogger.error("[TaskNotes][TaskListView] Failed to update date", {

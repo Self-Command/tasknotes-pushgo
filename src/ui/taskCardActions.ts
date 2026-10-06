@@ -1,3 +1,4 @@
+import { uiPlugin } from "../pushgo/uiOrigin";
 import { Notice } from "obsidian";
 import type TaskNotesPlugin from "../main";
 import type { TaskInfo } from "../types";
@@ -61,7 +62,11 @@ export function createStatusCycleHandler(
 				const nextStatus = e.shiftKey
 					? plugin.statusManager.getPreviousStatus(currentStatus)
 					: plugin.statusManager.getNextStatus(currentStatus);
-				const updatedTask = await plugin.updateTaskProperty(freshTask, "status", nextStatus);
+				const updatedTask = await uiPlugin(plugin).updateTaskProperty(
+					freshTask,
+					"status",
+					nextStatus
+				);
 				const isNowCompleted = plugin.statusManager.isCompletedStatus(nextStatus);
 				updateStatusVisuals(updatedTask, nextStatus, isNowCompleted);
 			} catch (error) {
@@ -93,7 +98,7 @@ export function createPriorityClickHandler(
 				void (async () => {
 					const logger = getTaskCardActionLogger(plugin);
 					try {
-						await plugin.updateTaskProperty(task, "priority", newPriority);
+						await uiPlugin(plugin).updateTaskProperty(task, "priority", newPriority);
 					} catch (error) {
 						logger.error("Error updating priority", {
 							category: "persistence",
@@ -128,13 +133,17 @@ export function createRecurrenceClickHandler(
 				void (async () => {
 					const logger = getTaskCardActionLogger(plugin);
 					try {
-						await plugin.updateTaskProperty(
+						await uiPlugin(plugin).updateTaskProperty(
 							task,
 							"recurrence",
 							newRecurrence || undefined
 						);
 						if (anchor !== undefined) {
-							await plugin.updateTaskProperty(task, "recurrence_anchor", anchor);
+							await uiPlugin(plugin).updateTaskProperty(
+								task,
+								"recurrence_anchor",
+								anchor
+							);
 						}
 					} catch (error) {
 						logger.error("Error updating recurrence", {
@@ -163,7 +172,7 @@ export function createReminderClickHandler(task: TaskInfo, plugin: TaskNotesPlug
 			void (async () => {
 				const logger = getTaskCardActionLogger(plugin);
 				try {
-					await plugin.updateTaskProperty(
+					await uiPlugin(plugin).updateTaskProperty(
 						task,
 						"reminders",
 						reminders.length > 0 ? reminders : undefined

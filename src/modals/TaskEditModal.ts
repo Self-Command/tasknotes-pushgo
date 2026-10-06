@@ -1,3 +1,4 @@
+import { uiPlugin, uiTaskService } from "../pushgo/uiOrigin";
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- Modal lifecycle initializes required controls before event handlers run. */
 import { App, Notice, TFile } from "obsidian";
 import TaskNotesPlugin from "../main";
@@ -475,7 +476,7 @@ export class TaskEditModal extends TaskModal {
 			let updatedTask = this.task;
 
 			if (hasTaskChanges) {
-				updatedTask = await this.plugin.taskService.updateTask(this.task, changes);
+				updatedTask = await uiTaskService(this.plugin).updateTask(this.task, changes);
 				this.task = updatedTask;
 				if (Object.prototype.hasOwnProperty.call(changes, "details")) {
 					const updatedDetails = stringifyUnknown(
@@ -487,7 +488,7 @@ export class TaskEditModal extends TaskModal {
 			}
 
 			if (hasBlockingChanges) {
-				await this.plugin.taskService.updateBlockingRelationships(
+				await uiTaskService(this.plugin).updateBlockingRelationships(
 					updatedTask,
 					this.pendingBlockingUpdates.added,
 					this.pendingBlockingUpdates.removed,
@@ -617,7 +618,7 @@ export class TaskEditModal extends TaskModal {
 
 	private async archiveTask(): Promise<void> {
 		try {
-			const updatedTask = await this.plugin.taskService.toggleArchive(this.task);
+			const updatedTask = await uiTaskService(this.plugin).toggleArchive(this.task);
 
 			// Update the task reference
 			this.task = updatedTask;
@@ -662,7 +663,7 @@ export class TaskEditModal extends TaskModal {
 		}
 
 		try {
-			await this.plugin.taskService.deleteTask(this.task);
+			await uiTaskService(this.plugin).deleteTask(this.task);
 			new Notice(this.t("modals.taskEdit.notices.deleteSuccess", { title: this.task.title }));
 			this.forceClose();
 		} catch (error) {
@@ -757,7 +758,7 @@ export class TaskEditModal extends TaskModal {
 			buildProjectReference: (parentTaskFile, subtaskPath) =>
 				this.buildProjectReference(parentTaskFile, subtaskPath),
 			updateTaskProjects: (subtaskInfo, updatedProjects) =>
-				this.plugin.updateTaskProperty(subtaskInfo, "projects", updatedProjects),
+				uiPlugin(this.plugin).updateTaskProperty(subtaskInfo, "projects", updatedProjects),
 			onAddError: (error) => {
 				tasknotesLogger.error("Failed to add subtask relation:", {
 					category: "persistence",

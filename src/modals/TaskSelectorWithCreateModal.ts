@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 import { App, SuggestModal, Notice, setIcon } from "obsidian";
 import { TaskInfo, TaskCreationData } from "../types";
 import { filterEmptyProjects } from "../utils/helpers";
@@ -187,10 +188,16 @@ export class TaskSelectorWithCreateModal extends SuggestModal<TaskInfo> {
 		this.setInstructions([
 			{ command: "↑↓", purpose: this.translate("modals.taskSelector.instructions.navigate") },
 			{ command: "↵", purpose: this.translate("modals.taskSelector.instructions.select") },
-			...(options.allowCreate === false ? [] : [{
-				command: "⇧↵",
-				purpose: this.translate("modals.taskSelectorWithCreate.instructions.create"),
-			}]),
+			...(options.allowCreate === false
+				? []
+				: [
+						{
+							command: "⇧↵",
+							purpose: this.translate(
+								"modals.taskSelectorWithCreate.instructions.create"
+							),
+						},
+					]),
 			{ command: "esc", purpose: this.translate("modals.taskSelector.instructions.dismiss") },
 		]);
 
@@ -523,7 +530,7 @@ export class TaskSelectorWithCreateModal extends SuggestModal<TaskInfo> {
 			const taskData = this.buildTaskDataFromParsed(parsed);
 
 			// Create the task
-			const result = await this.plugin.taskService.createTask(taskData);
+			const result = await uiTaskService(this.plugin).createTask(taskData);
 
 			new Notice(
 				this.translate("modals.taskCreation.notices.success", {

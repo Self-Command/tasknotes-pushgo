@@ -1,0 +1,99 @@
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css" source(none);
+@source "./**/*.tsx";
+@custom-variant dark (&:is(.dark *));
+:root {
+	--background: oklch(0.98 0.003 250);
+	--foreground: oklch(0.2 0.015 250);
+	--card: #fff;
+	--card-foreground: var(--foreground);
+	--popover: #fff;
+	--popover-foreground: var(--foreground);
+	--primary: oklch(0.56 0.2 255);
+	--primary-foreground: #fff;
+	--secondary: oklch(0.95 0.005 250);
+	--secondary-foreground: var(--foreground);
+	--muted: oklch(0.96 0.004 250);
+	--muted-foreground: oklch(0.5 0.015 250);
+	--accent: var(--secondary);
+	--accent-foreground: var(--foreground);
+	--destructive: oklch(0.58 0.23 25);
+	--border: oklch(0.91 0.005 250);
+	--input: var(--border);
+	--ring: var(--primary);
+	--radius: 1rem;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: oklch(0.16 0.006 250);
+		--foreground: oklch(0.95 0.002 250);
+		--card: oklch(0.21 0.006 250);
+		--card-foreground: var(--foreground);
+		--popover: var(--card);
+		--secondary: oklch(0.27 0.008 250);
+		--secondary-foreground: var(--foreground);
+		--muted: var(--secondary);
+		--muted-foreground: oklch(0.7 0.008 250);
+		--accent: var(--secondary);
+		--border: oklch(0.32 0.008 250);
+		--input: var(--border);
+	}
+}
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+}
+
+.tn-pushgo {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	color: var(--foreground);
+	background: var(--background);
+	padding: 8px;
+}
+.tn-pushgo button:not([data-slot="switch"]),
+.tn-pushgo input,
+.tn-pushgo select {
+	min-height: 44px;
+}
+.tn-pushgo h2 {
+	margin: 0;
+}
+.tn-pushgo a {
+	color: inherit;
+}
+.tn-pushgo input {
+	box-sizing: border-box;
+}
+.tn-pushgo [data-slot="card"] {
+	background: var(--card);
+	border-color: var(--border);
+}
+
+.tn-pushgo [data-slot="switch"] {
+	min-height: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+.tn-pushgo [data-slot="switch-thumb"] {
+	flex-shrink: 0;
+}

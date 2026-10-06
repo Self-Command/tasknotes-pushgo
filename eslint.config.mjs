@@ -296,7 +296,7 @@ export default [
 	...obsidianRecommendedConfig,
 
 	{
-		files: ["src/**/*.ts"],
+		files: ["src/**/*.ts", "src/**/*.tsx"],
 		languageOptions: {
 			parser: tsParser,
 			parserOptions: {

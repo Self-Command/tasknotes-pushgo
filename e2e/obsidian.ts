@@ -5,7 +5,7 @@ import { spawn, ChildProcess } from 'child_process';
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const UNPACKED_DIR = path.join(PROJECT_ROOT, '.obsidian-unpacked');
-const E2E_VAULT_DIR = path.join(PROJECT_ROOT, 'tasknotes-e2e-vault');
+const E2E_VAULT_DIR = process.env.TASKNOTES_E2E_VAULT_DIR ?? path.join(PROJECT_ROOT, 'tasknotes-e2e-vault');
 
 export interface ObsidianApp {
   browser?: Browser;
@@ -260,7 +260,7 @@ async function waitForCdpUrl(
 
 export async function launchObsidian(): Promise<ObsidianApp> {
   // Check that setup has been run
-  const obsidianBinary = path.join(UNPACKED_DIR, 'obsidian');
+  const obsidianBinary = process.env.TASKNOTES_E2E_OBSIDIAN_BINARY ?? path.join(UNPACKED_DIR, 'obsidian');
   if (!fs.existsSync(obsidianBinary)) {
     throw new Error(
       'Obsidian unpacked directory not found. Run `npm run e2e:setup` first.'
@@ -314,14 +314,15 @@ export async function launchObsidian(): Promise<ObsidianApp> {
       `--user-data-dir=${userDataDir}`,
       E2E_VAULT_DIR,
     ];
-    const launchWithoutDisplay = !process.env.DISPLAY;
+    const launchWithoutDisplay = process.platform !== 'win32' && !process.env.DISPLAY;
     const spawnCommand = launchWithoutDisplay ? 'xvfb-run' : obsidianBinary;
     const spawnArgs = launchWithoutDisplay
       ? ['-a', obsidianBinary, ...obsidianArgs]
       : obsidianArgs;
 
     obsidianProcess = spawn(spawnCommand, spawnArgs, {
-      cwd: UNPACKED_DIR,
+      cwd: path.dirname(obsidianBinary),
+      windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: true, // Own the Xvfb/Electron process group so teardown cannot leak children.
       env: {
@@ -380,7 +381,7 @@ export async function launchObsidian(): Promise<ObsidianApp> {
   await setObsidianViewport(page, { width: 1400, height: 900 });
 
   // Handle "Trust this vault" dialog - this enables community plugins
-  const trustButton = page.locator('button:has-text("Trust author and enable plugins")');
+  const trustButton = page.getByRole('button', {name:/Trust author and enable plugins|信任仓库作者并启用插件/});
   if (await trustButton.isVisible({ timeout: 3000 }).catch(() => false)) {
     await trustButton.click();
     await page.waitForTimeout(2000);
@@ -407,12 +408,14 @@ export async function launchObsidian(): Promise<ObsidianApp> {
     await page.waitForTimeout(1000);
   }
 
-  // Wait for the workspace to be ready
-  await page.waitForSelector('.workspace', { timeout: 30000 });
-
   await page.waitForFunction(() =>
     Object.keys((window as any).app.commands.commands).some(id => id.startsWith('tasknotes:'))
   );
+
+  // Wait for the workspace to be ready
+  await page.waitForSelector('.workspace', { timeout: 30000 });
+
+
 
   // Close any open modals/dialogs that might be blocking the UI
   // This is especially important when reusing an existing instance
@@ -468,7 +471,8 @@ export async function closeObsidian(app: ObsidianApp): Promise<void> {
   } finally {
     if (app.process?.pid) {
       try {
-        process.kill(-app.process.pid, 'SIGTERM');
+        if (process.platform === 'win32') app.process.kill();
+        else process.kill(-app.process.pid, 'SIGTERM');
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
       }

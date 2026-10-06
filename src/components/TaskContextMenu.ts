@@ -1,4 +1,13 @@
-import { Menu, Notice, Platform, TFile, setTooltip, type MenuItem, type TAbstractFile } from "obsidian";
+import { uiPlugin, uiTaskService } from "../pushgo/uiOrigin";
+import {
+	Menu,
+	Notice,
+	Platform,
+	TFile,
+	setTooltip,
+	type MenuItem,
+	type TAbstractFile,
+} from "obsidian";
 import type { OccurrenceMaterializationMode, OccurrenceNextTrigger } from "@tasknotes/model";
 import TaskNotesPlugin from "../main";
 import { TaskDependency, TaskInfo } from "../types";
@@ -220,7 +229,7 @@ export class TaskContextMenu {
 				task.due,
 				async (value: string | null) => {
 					try {
-						await plugin.updateTaskProperty(task, "due", value || undefined);
+						await uiPlugin(plugin).updateTaskProperty(task, "due", value || undefined);
 						this.options.onUpdate?.();
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
@@ -254,7 +263,11 @@ export class TaskContextMenu {
 				task.scheduled,
 				async (value: string | null) => {
 					try {
-						await plugin.updateTaskProperty(task, "scheduled", value || undefined);
+						await uiPlugin(plugin).updateTaskProperty(
+							task,
+							"scheduled",
+							value || undefined
+						);
 						this.options.onUpdate?.();
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
@@ -323,7 +336,7 @@ export class TaskContextMenu {
 					const modal = new ReminderModal(plugin.app, plugin, task, (reminders) => {
 						void (async () => {
 							try {
-								await plugin.updateTaskProperty(
+								await uiPlugin(plugin).updateTaskProperty(
 									task,
 									"reminders",
 									reminders.length > 0 ? reminders : undefined
@@ -352,7 +365,7 @@ export class TaskContextMenu {
 					subItem.setIcon("trash");
 					subItem.onClick(async () => {
 						try {
-							await plugin.updateTaskProperty(task, "reminders", undefined);
+							await uiPlugin(plugin).updateTaskProperty(task, "reminders", undefined);
 							this.options.onUpdate?.();
 						} catch (error) {
 							tasknotesLogger.error("Error clearing reminders:", {
@@ -448,7 +461,7 @@ export class TaskContextMenu {
 			item.setIcon(task.archived ? "archive-restore" : "archive");
 			item.onClick(async () => {
 				try {
-					await plugin.toggleTaskArchive(task);
+					await uiPlugin(plugin).toggleTaskArchive(task);
 					this.options.onUpdate?.();
 				} catch (error) {
 					const errorMessage = error instanceof Error ? error.message : String(error);
@@ -607,7 +620,7 @@ export class TaskContextMenu {
 						});
 						if (confirmed) {
 							try {
-								await plugin.taskService.deleteTask(task);
+								await uiTaskService(plugin).deleteTask(task);
 								if (this.options.onUpdate) {
 									this.options.onUpdate();
 								}
@@ -804,7 +817,11 @@ export class TaskContextMenu {
 				currentRecurrence,
 				async (value: string | null) => {
 					try {
-						await plugin.updateTaskProperty(task, "recurrence", value || undefined);
+						await uiPlugin(plugin).updateTaskProperty(
+							task,
+							"recurrence",
+							value || undefined
+						);
 						this.options.onUpdate?.();
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
@@ -982,11 +999,7 @@ export class TaskContextMenu {
 		});
 	}
 
-	private addPickCompletionDateAction(
-		task: TaskInfo,
-		plugin: TaskNotesPlugin,
-		menu: Menu
-	): void {
+	private addPickCompletionDateAction(task: TaskInfo, plugin: TaskNotesPlugin, menu: Menu): void {
 		menu.addItem((item) => {
 			item.setTitle(this.t("contextMenus.task.completion.completeOnPicked"));
 			item.setIcon("calendar-plus");
@@ -1037,7 +1050,7 @@ export class TaskContextMenu {
 					new Notice(this.t("contextMenus.task.completion.noCompletedStatus"));
 					return;
 				}
-				await plugin.updateTaskProperty(task, "status", completedStatus, {
+				await uiPlugin(plugin).updateTaskProperty(task, "status", completedStatus, {
 					completionDate: formatDateForStorage(resolvedDate),
 				});
 			}
@@ -1066,7 +1079,7 @@ export class TaskContextMenu {
 			// Revert to the default open status; the status pipeline clears
 			// completedDate for a non-completed status (mirrors uncompleteTask).
 			const openStatus = plugin.settings.defaultTaskStatus ?? "open";
-			await plugin.updateTaskProperty(task, "status", openStatus);
+			await uiPlugin(plugin).updateTaskProperty(task, "status", openStatus);
 			this.options.onUpdate?.();
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1100,7 +1113,10 @@ export class TaskContextMenu {
 			item.setIcon(isSkippedForDate ? "undo" : "x-circle");
 			item.onClick(async () => {
 				try {
-					await plugin.taskService.toggleRecurringTaskSkipped(task, skipOccurrenceDate);
+					await uiTaskService(plugin).toggleRecurringTaskSkipped(
+						task,
+						skipOccurrenceDate
+					);
 					this.options.onUpdate?.();
 				} catch (error) {
 					const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1193,8 +1209,11 @@ export class TaskContextMenu {
 			item.onClick(async () => {
 				try {
 					const updatedTask = isSkipped
-						? await plugin.taskService.unskipMaterializedOccurrence(task)
-						: await plugin.taskService.skipMaterializedOccurrence(task, skippedStatus);
+						? await uiTaskService(plugin).unskipMaterializedOccurrence(task)
+						: await uiTaskService(plugin).skipMaterializedOccurrence(
+								task,
+								skippedStatus
+							);
 					Object.assign(task, updatedTask);
 					this.options.onUpdate?.();
 				} catch (error) {
@@ -1249,7 +1268,7 @@ export class TaskContextMenu {
 						item.onClick(async () => {
 							try {
 								const remaining = blockedByEntries.filter((_, i) => i !== index);
-								const updatedTask = await plugin.updateTaskProperty(
+								const updatedTask = await uiPlugin(plugin).updateTaskProperty(
 									task,
 									"blockedBy",
 									remaining.length > 0 ? remaining : undefined
@@ -1304,7 +1323,7 @@ export class TaskContextMenu {
 						item.setTitle(label);
 						item.onClick(async () => {
 							try {
-								await plugin.taskService.updateBlockingRelationships(
+								await uiTaskService(plugin).updateBlockingRelationships(
 									task,
 									[],
 									[path],
@@ -1441,7 +1460,11 @@ export class TaskContextMenu {
 				return;
 			}
 
-			const updatedTask = await plugin.updateTaskProperty(task, "blockedBy", combined);
+			const updatedTask = await uiPlugin(plugin).updateTaskProperty(
+				task,
+				"blockedBy",
+				combined
+			);
 			Object.assign(task, updatedTask);
 
 			new Notice(
@@ -1481,7 +1504,7 @@ export class TaskContextMenu {
 				),
 				reltype: DEFAULT_DEPENDENCY_RELTYPE,
 			};
-			await plugin.taskService.updateBlockingRelationships(task, [blockedPath], [], {
+			await uiTaskService(plugin).updateBlockingRelationships(task, [blockedPath], [], {
 				[blockedPath]: rawEntry,
 			});
 
@@ -1617,7 +1640,11 @@ export class TaskContextMenu {
 		contexts: string[] | undefined
 	): Promise<void> {
 		try {
-			const updatedTask = await plugin.updateTaskProperty(task, "contexts", contexts);
+			const updatedTask = await uiPlugin(plugin).updateTaskProperty(
+				task,
+				"contexts",
+				contexts
+			);
 			Object.assign(task, updatedTask);
 			this.options.onUpdate?.();
 		} catch (error) {
@@ -1705,7 +1732,7 @@ export class TaskContextMenu {
 		tags: string[] | undefined
 	): Promise<void> {
 		try {
-			const updatedTask = await plugin.updateTaskProperty(task, "tags", tags);
+			const updatedTask = await uiPlugin(plugin).updateTaskProperty(task, "tags", tags);
 			Object.assign(task, updatedTask);
 			this.options.onUpdate?.();
 		} catch (error) {
@@ -1891,7 +1918,7 @@ export class TaskContextMenu {
 
 				item.onClick(async () => {
 					try {
-						await plugin.updateTaskProperty(task, "status", option.value);
+						await uiPlugin(plugin).updateTaskProperty(task, "status", option.value);
 						this.options.onUpdate?.();
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1945,7 +1972,7 @@ export class TaskContextMenu {
 
 				item.onClick(async () => {
 					try {
-						await plugin.updateTaskProperty(task, "priority", value);
+						await uiPlugin(plugin).updateTaskProperty(task, "priority", value);
 						this.options.onUpdate?.();
 					} catch (error) {
 						const errorMessage = error instanceof Error ? error.message : String(error);
@@ -2148,7 +2175,7 @@ export class TaskContextMenu {
 	): Promise<void> {
 		const fieldLabel = this.getCustomFieldLabel(field);
 		try {
-			const updatedTask = await plugin.updateTaskProperty(
+			const updatedTask = await uiPlugin(plugin).updateTaskProperty(
 				task,
 				field.key as keyof TaskInfo,
 				value || undefined
@@ -2386,7 +2413,7 @@ export class TaskContextMenu {
 		mode: Exclude<OccurrenceMaterializationMode, "rolling">
 	): Promise<void> {
 		try {
-			const updatedTask = await plugin.updateTaskProperty(
+			const updatedTask = await uiPlugin(plugin).updateTaskProperty(
 				task,
 				"occurrence_materialization",
 				mode === "manual" ? undefined : mode
@@ -2394,7 +2421,7 @@ export class TaskContextMenu {
 			Object.assign(task, updatedTask);
 
 			if (mode !== "on_completion" && task.occurrence_next_trigger) {
-				const updatedWithoutTrigger = await plugin.updateTaskProperty(
+				const updatedWithoutTrigger = await uiPlugin(plugin).updateTaskProperty(
 					task,
 					"occurrence_next_trigger",
 					undefined
@@ -2426,7 +2453,7 @@ export class TaskContextMenu {
 		trigger: OccurrenceNextTrigger
 	): Promise<void> {
 		try {
-			const updatedTask = await plugin.updateTaskProperty(
+			const updatedTask = await uiPlugin(plugin).updateTaskProperty(
 				task,
 				"occurrence_next_trigger",
 				trigger === "completion" ? undefined : trigger
@@ -2538,7 +2565,7 @@ export class TaskContextMenu {
 
 		const updatedReminders = [...(task.reminders || []), reminder];
 		try {
-			await plugin.updateTaskProperty(task, "reminders", updatedReminders);
+			await uiPlugin(plugin).updateTaskProperty(task, "reminders", updatedReminders);
 			this.options.onUpdate?.();
 		} catch (error) {
 			tasknotesLogger.error("Error adding reminder:", {

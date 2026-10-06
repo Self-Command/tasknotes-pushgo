@@ -1,3 +1,4 @@
+import { uiPlugin, uiTaskService } from "../pushgo/uiOrigin";
 import { App, Notice, setIcon, setTooltip, TFile } from "obsidian";
 import TaskNotesPlugin from "../main";
 import { TaskModal } from "./TaskModal";
@@ -639,7 +640,7 @@ export class TaskCreationModal extends TaskModal {
 		try {
 			const taskData = this.buildTaskData();
 			// Disable defaults since they were already applied to form fields in initializeFormData()
-			const result = await this.plugin.taskService.createTask(taskData, {
+			const result = await uiTaskService(this.plugin).createTask(taskData, {
 				applyDefaults: false,
 			});
 			let createdTask = result.taskInfo;
@@ -666,7 +667,7 @@ export class TaskCreationModal extends TaskModal {
 				const blockingUpdates = buildCreationBlockingUpdates(this.blockingItems);
 
 				if (blockingUpdates.added.length > 0) {
-					await this.plugin.taskService.updateBlockingRelationships(
+					await uiTaskService(this.plugin).updateBlockingRelationships(
 						createdTask,
 						blockingUpdates.added,
 						[],
@@ -791,7 +792,7 @@ export class TaskCreationModal extends TaskModal {
 			buildProjectReference: (targetFile, sourcePath) =>
 				this.buildProjectReference(targetFile, sourcePath),
 			updateTaskProjects: (subtaskInfo, projects) =>
-				this.plugin.updateTaskProperty(subtaskInfo, "projects", projects),
+				uiPlugin(this.plugin).updateTaskProperty(subtaskInfo, "projects", projects),
 			onError: (error) => {
 				tasknotesLogger.error("Failed to assign subtask:", {
 					category: "persistence",

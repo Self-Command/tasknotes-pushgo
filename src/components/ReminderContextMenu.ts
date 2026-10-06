@@ -1,3 +1,4 @@
+import { uiTaskService } from "../pushgo/uiOrigin";
 import { Menu } from "obsidian";
 import TaskNotesPlugin from "../main";
 import { TaskInfo, Reminder } from "../types";
@@ -163,7 +164,11 @@ export class ReminderContextMenu {
 					reminders,
 				};
 				// Save to file since task exists
-				await this.plugin.taskService.updateProperty(updatedTask, "reminders", reminders);
+				await uiTaskService(this.plugin).updateProperty(
+					updatedTask,
+					"reminders",
+					reminders
+				);
 			} else {
 				// Task path exists but task not found in cache - this shouldn't happen in edit modal
 				// Use the provided task data
