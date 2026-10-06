@@ -36,6 +36,8 @@ When a change has user-facing documentation, include a canonical tasknotes.dev l
 
 ## Changed
 
+- PushGo 二开仓库推送 main 后自动发布可直接安装的 GitHub Release，提供插件 ZIP、三个安装文件、源码提交和校验值；仅在构建检查通过后发布。
+
 ## Removed
 
 ## Fixed

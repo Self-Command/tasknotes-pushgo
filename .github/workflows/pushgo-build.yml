@@ -7,7 +7,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pushgo-plugin-pr-{0}', github.event.pull_request.number) || 'pushgo-plugin-release' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify-and-package:
@@ -29,16 +33,44 @@ jobs:
       - run: npm test -- --runInBand
       - run: node --test scripts/check-bundle-size.test.mjs scripts/bundle-dependencies.test.mjs
       - run: npm run check:bundle-size
-      - name: Package local test plugin
+      - name: Package installable plugin
         run: |
+          set -euo pipefail
           mkdir -p package/tasknotes
-          cp main.js styles.css manifest.json LICENSE PUSHGO-开发与安装.md package/tasknotes/
+          mkdir -p dist
+          cp main.js styles.css manifest.json LICENSE package/tasknotes/
+          cp PUSHGO-开发与安装.md package/tasknotes/INSTALL.md
           cp -r THIRD-PARTY-LICENSES package/tasknotes/
-          cd package
-          zip -r ../TaskNotes-PushGo-test.zip tasknotes
+          (cd package && zip -r ../dist/TaskNotes-PushGo.zip tasknotes)
+          cp main.js styles.css manifest.json dist/
+          printf 'commit=%s\nplugin_version=%s\nworkflow=%s\n' "$GITHUB_SHA" \
+            "$(node -p 'require("./manifest.json").version')" "$GITHUB_RUN_ID" > dist/BUILD_INFO.txt
+          (cd dist && sha256sum ./* > SHA256SUMS.txt)
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: TaskNotes-PushGo-test
-          path: TaskNotes-PushGo-test.zip
+          path: dist/*
           if-no-files-found: error
           retention-days: 30
+      - name: Publish installable GitHub release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="pushgo-build-$GITHUB_RUN_NUMBER"
+          printf '%s\n' \
+            'TaskNotes 官方源码的 PushGo 二开构建。' \
+            '下载 TaskNotes-PushGo.zip，解压后把 tasknotes 内的文件放到 vault/.obsidian/plugins/tasknotes。' \
+            '也可分别下载 main.js、styles.css、manifest.json；插件 ID 保持 tasknotes，桌面与移动端共用。' \
+            '定时通知与拍照打卡需要部署独立业务服务并在集成设置中配对。' \
+            '本构建已通过工作流检查，真实设备验收范围见安装说明；不是官方插件市场发布。' \
+            "Source: $GITHUB_SHA" > release-notes.md
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+            --json targetCommitish --jq .targetCommitish > existing-release.txt; then
+            test "$(cat existing-release.txt)" = "$GITHUB_SHA"
+          else
+            gh release create "$tag" dist/* --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "TaskNotes PushGo build $GITHUB_RUN_NUMBER" \
+              --notes-file release-notes.md --latest
+          fi

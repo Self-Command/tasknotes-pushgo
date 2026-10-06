@@ -2,6 +2,8 @@
 
 官方源码固定提交 69535cd956d11474b980deef8429ff0be232185f，开发分支 codex/pushgo-checkin，保留官方历史、MIT 许可证和插件 ID tasknotes。上游远程为 upstream，当前版本仍为 4.13.8；此包是本地二开测试发行物。
 
+推送 main 后 Actions 自动检查、编译并发布 GitHub Release。下载 `releases/latest/download/TaskNotes-PushGo.zip` 可安装最新版，Release 同时提供 main.js、styles.css、manifest.json、源码提交与 SHA256。自动构建使用 pushgo-build-* 标签，插件内版本沿用 manifest，不修改用户数据或发布到官方插件市场。PR 仅验证，不发布；失败构建不发布。
+
 关闭 TaskNotes 后，备份 vault/.obsidian/plugins/tasknotes 中的旧文件，解压交付包，将 main.js、styles.css、manifest.json 放到该插件目录，再启用插件。移动端用同样三个文件通过 vault 同步工具安装；不替换日常 vault 配置或任务笔记。Obsidian 最低版本 1.12.2。
 
 设置 → TaskNotes → 集成 → 定时通知与拍照打卡，可配置业务地址、附件目录、配对密码、默认窗口、优先级映射、早晚统计和频道凭据。先保存连接、登录配对，再保存服务器默认值和频道绑定。频道 ID 从 PushGo 复制，名称用于展示。

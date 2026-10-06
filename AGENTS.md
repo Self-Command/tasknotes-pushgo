@@ -1,5 +1,15 @@
 # TaskNotes - Agent Development Guide
 
+## Owner-authorized PushGo build publication
+
+On 2026-10-06 the repository owner explicitly requested that every push to `main`
+automatically compile and publish downloadable GitHub Releases for the modified
+projects. `.github/workflows/pushgo-build.yml` publishes the exact checked commit
+and existing plugin version after its checks pass. These `pushgo-build-*`
+distributions do not use the formal upstream version-release procedure below.
+Do not ask again before this authorized automatic publication. PRs only verify
+and package; failed builds never publish. Preserve existing released assets.
+
 This is an Obsidian plugin. The plugin ID is `tasknotes`.
 
 ## Build & Test

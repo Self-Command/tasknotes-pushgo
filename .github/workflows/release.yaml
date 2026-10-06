@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - '*'
+      - '!pushgo-build-*'
 
 env:
   PLUGIN_NAME: tasknotes
