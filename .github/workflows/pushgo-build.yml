@@ -1,0 +1,44 @@
+name: PushGo plugin build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint:ts
+      - run: npm run lint:review-types
+      - run: npm run lint:architecture
+      - run: npm run lint:css:dist
+      - run: npm test -- --runInBand
+      - run: node --test scripts/check-bundle-size.test.mjs scripts/bundle-dependencies.test.mjs
+      - run: npm run check:bundle-size
+      - name: Package local test plugin
+        run: |
+          mkdir -p package/tasknotes
+          cp main.js styles.css manifest.json LICENSE PUSHGO-开发与安装.md package/tasknotes/
+          cp -r THIRD-PARTY-LICENSES package/tasknotes/
+          cd package
+          zip -r ../TaskNotes-PushGo-test.zip tasknotes
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: TaskNotes-PushGo-test
+          path: TaskNotes-PushGo-test.zip
+          if-no-files-found: error
+          retention-days: 30
